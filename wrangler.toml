@@ -1,4 +1,4 @@
-name = "edge-chat-demo"
+name = "readtalk"
 compatibility_date = "2024-01-01"
 
 main = "src/chat.mjs"
