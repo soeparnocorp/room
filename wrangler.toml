@@ -11,7 +11,7 @@ bindings = [
 
 # KV Namespace binding
 kv_namespaces = [
-  { binding = "READTALK_KV", id = "ff653b9c-4e2c-479d-8aa4-497da62de3c5" }
+  { binding = "READTALK_KV", id = "13a468e30cc84fe58ff6297d799050f2" }
 ]
 
 # D1 Database binding
