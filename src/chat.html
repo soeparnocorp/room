@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>@username room</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; }
+    #overlay {
+      position: fixed; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: #fff;
+      z-index: 10;
+    }
+    #overlay input {
+      font-size: 24px;
+      padding: 12px;
+      width: 260px;
+      text-align: center;
+    }
+    #chatlog {
+      padding: 12px;
+      height: calc(100vh - 48px);
+      overflow-y: auto;
+    }
+    #input {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: 48px;
+      border: none;
+      border-top: 1px solid #ccc;
+      padding: 12px;
+      font-size: 16px;
+    }
+    .name { font-weight: bold; }
+  </style>
+</head>
+
+<body>
+
+<div id="overlay">
+  <input id="nameInput" placeholder="your name">
+</div>
+
+<div id="chatlog"></div>
+<input id="input" placeholder="type message…">
+
+<script>
+const overlay = document.getElementById("overlay");
+const nameInput = document.getElementById("nameInput");
+const chatlog = document.getElementById("chatlog");
+const input = document.getElementById("input");
+
+let username;
+let socket;
+
+// ===== room = @username from URL =====
+let room = location.pathname.slice(1);
+if (!room.startsWith("@")) {
+  document.body.innerHTML = "Invalid room";
+  throw new Error("Invalid room");
+}
+
+// ===== name input =====
+nameInput.addEventListener("keydown", e => {
+  if (e.key === "Enter" && nameInput.value.trim()) {
+    username = nameInput.value.trim().slice(0, 32);
+    overlay.remove();
+    connect();
+  }
+});
+
+function connect() {
+  const proto = location.protocol === "http:" ? "ws://" : "wss://";
+  socket = new WebSocket(proto + location.host + "/api/room/" + room + "/websocket");
+
+  socket.onopen = () => {
+    socket.send(JSON.stringify({ name: username }));
+  };
+
+  socket.onmessage = e => {
+    const data = JSON.parse(e.data);
+
+    if (data.joined) {
+      addLine("* " + data.joined + " joined");
+    } else if (data.quit) {
+      addLine("* " + data.quit + " left");
+    } else if (data.message) {
+      addLine(data.name + ": " + data.message, true);
+    }
+  };
+
+  socket.onclose = () => {
+    addLine("* disconnected");
+  };
+}
+
+input.addEventListener("keydown", e => {
+  if (e.key === "Enter" && socket) {
+    socket.send(JSON.stringify({ message: input.value }));
+    input.value = "";
+  }
+});
+
+function addLine(text, bold=false) {
+  const p = document.createElement("p");
+  if (bold) {
+    const span = document.createElement("span");
+    span.className = "name";
+    span.textContent = text.split(":")[0] + ": ";
+    p.appendChild(span);
+    p.appendChild(document.createTextNode(text.split(":").slice(1).join(":")));
+  } else {
+    p.textContent = text;
+  }
+  chatlog.appendChild(p);
+  chatlog.scrollTop = chatlog.scrollHeight;
+}
+</script>
+
+</body>
+</html>
