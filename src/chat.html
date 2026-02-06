@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+      * { box-sizing: border-box; }
+      body { font-family: Arial, Helvetica, sans-serif; margin:0; }
+
+      #chatlog { position: fixed; top: 100px; bottom: 32px; left: 0; right: 200px; overflow-y: auto; padding: 8px; overflow-wrap: break-word; }
+      #chatlog span.username { font-weight: bold; }
+      #spacer { height: calc(100vh - 32px - 5em); }
+
+      #roster { font-weight: bold; padding: 8px; position: fixed; right: 0; top: 100px; bottom: 32px; width: 200px; border-left: none; }
+
+      ::-webkit-scrollbar { display: none; }
+
+      #chat-input { position: fixed; width: 100%; height: 32px; bottom: 0; left: 0; border: none; padding-left: 32px; outline: none; }
+
+      #name-form, #room-form { position: fixed; z-index: 3; top: 0; left: 0; right: 0; background-color: white; text-align: center; padding-top: 10px; }
+      #name-input { font-size: 200%; width: 16em; height: 2em; text-align: center; margin-bottom: 8px; }
+      #room-name { font-size: 200%; width: 16em; height: 2em; padding-left: 1em; margin-right: 8px; }
+      #room-form button { font-size: 200%; border: 1px solid #bbb; background-color: #eee; height: 2em; }
+
+      @media(max-width:600px) {
+        #roster { display: none; }
+        #chatlog { right: 0; }
+        #name-input, #room-name, #room-form button { font-size: 150%; }
+      }
+      @media(max-width:500px) {
+        #name-input, #room-name, #room-form button { font-size: 100%; }
+      }
+
+      #go-public { width: 4em; }
+      #go-private { width: 20em; }
+    </style>
+  </head>
+  <body>
+    <form id="name-form">
+      <input id="name-input" placeholder="Your name">
+    </form>
+
+    <form id="room-form">
+      <input id="room-name" placeholder="Room name">
+      <button id="go-public">Go &raquo;</button>
+      <button id="go-private">Private &raquo;</button>
+    </form>
+
+    <form id="chatroom">
+      <div id="chatlog"><div id="spacer"></div></div>
+      <div id="roster"></div>
+      <input id="chat-input">
+    </form>
+
+    <script type="text/javascript">
+      let currentWebSocket = null;
+      let nameForm = document.querySelector("#name-form");
+      let nameInput = document.querySelector("#name-input");
+      let roomForm = document.querySelector("#room-form");
+      let roomNameInput = document.querySelector("#room-name");
+      let goPublicButton = document.querySelector("#go-public");
+      let goPrivateButton = document.querySelector("#go-private");
+      let chatroom = document.querySelector("#chatroom");
+      let chatlog = document.querySelector("#chatlog");
+      let chatInput = document.querySelector("#chat-input");
+      let roster = document.querySelector("#roster");
+
+      let isAtBottom = true;
+      let username, roomname;
+      let hostname = window.location.host || "room.soeparnocorp.workers.dev";
+
+      function startNameChooser() {
+        nameForm.addEventListener("submit", e => {
+          e.preventDefault();
+          username = nameInput.value;
+          if (username.length > 0) startRoomChooser();
+        });
+        nameInput.addEventListener("input", e => { if(e.target.value.length>32)e.target.value=e.target.value.slice(0,32); });
+        nameInput.focus();
+      }
+
+      function startRoomChooser() {
+        nameForm.remove();
+        roomForm.addEventListener("submit", e => { e.preventDefault(); roomname = roomNameInput.value; if(roomname.length>0) startChat(); });
+        goPublicButton.addEventListener("click", e => { roomname = roomNameInput.value; if(roomname.length>0) startChat(); });
+        goPrivateButton.addEventListener("click", async e => {
+          roomNameInput.disabled = true; goPublicButton.disabled = true; e.target.disabled = true;
+          let res = await fetch("https://"+hostname+"/api/room",{method:"POST"});
+          if(!res.ok){ alert("something went wrong"); location.reload(); return; }
+          roomname = await res.text(); startChat();
+        });
+        roomNameInput.focus();
+      }
+
+      function startChat() {
+        roomForm.remove();
+        roomname = roomname.replace(/[^a-zA-Z0-9_-]/g,"").replace(/_/,"-").toLowerCase();
+        if(roomname.length>32 && !roomname.match(/^[0-9a-f]{64}$/)){ addChatMessage("ERROR","Invalid room name."); return; }
+        location.hash = "#"+roomname;
+
+        chatroom.addEventListener("submit", e => { e.preventDefault(); if(currentWebSocket){ currentWebSocket.send(JSON.stringify({message: chatInput.value})); chatInput.value=""; chatlog.scrollBy(0,1e8); } });
+        chatInput.addEventListener("input", e => { if(e.target.value.length>256) e.target.value=e.target.value.slice(0,256); });
+        chatInput.focus();
+
+        if('visualViewport' in window){ window.visualViewport.addEventListener('resize',()=>{ if(isAtBottom) chatlog.scrollBy(0,1e8); }); }
+
+        join();
+      }
+
+      let lastSeenTimestamp=0, wroteWelcomeMessages=false;
+
+      function join() {
+        const wss = location.protocol==="http:"?"ws://":"wss://";
+        let ws=new WebSocket(wss+hostname+"/api/room/"+roomname+"/websocket");
+        let rejoined=false, startTime=Date.now();
+
+        let rejoin=async()=>{
+          if(!rejoined){ rejoined=true; currentWebSocket=null; while(roster.firstChild) roster.removeChild(roster.firstChild);
+            let elapsed=Date.now()-startTime; if(elapsed<10000) await new Promise(r=>setTimeout(r,10000-elapsed));
+            join();
+          }
+        }
+
+        ws.addEventListener("open",()=>{ currentWebSocket=ws; ws.send(JSON.stringify({name:username})); });
+        ws.addEventListener("message", e=>{
+          let data=JSON.parse(e.data);
+          if(data.error) addChatMessage(null,"* Error: "+data.error);
+          else if(data.joined){ let p=document.createElement("p"); p.innerText=data.joined; roster.appendChild(p); }
+          else if(data.quit){ for(let c of roster.childNodes){ if(c.innerText==data.quit){ roster.removeChild(c); break; } } }
+          else if(data.ready && !wroteWelcomeMessages){ wroteWelcomeMessages=true;
+            addChatMessage(null,"* This is a demo app built with Cloudflare Workers Durable Objects.");
+            if(roomname.length==64) addChatMessage(null,"* Private room. Share the URL to invite.");
+            else addChatMessage(null,"* Welcome to #"+roomname+". Say hi!");
+          }
+          else if(data.timestamp>lastSeenTimestamp){ addChatMessage(data.name,data.message); lastSeenTimestamp=data.timestamp; }
+        });
+        ws.addEventListener("close",()=>{ rejoin(); });
+        ws.addEventListener("error",()=>{ rejoin(); });
+      }
+
+      function addChatMessage(name,text){
+        let p=document.createElement("p");
+        if(name){ let tag=document.createElement("span"); tag.className="username"; tag.innerText=name+": "; p.appendChild(tag); }
+        p.appendChild(document.createTextNode(text));
+        chatlog.appendChild(p); if(isAtBottom) chatlog.scrollBy(0,1e8);
+      }
+
+      startNameChooser();
+    </script>
+  </body>
+</html>
