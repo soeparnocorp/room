@@ -2,243 +2,230 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Edge Chat</title>
+  <title>Edge Chat Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    :root {
-      --bg: #ffffff;
-      --fg: #111;
-      --sidebar: #f0f2f5;
-      --chat: #ffffff;
-      --border: #ddd;
-      --accent: #25d366;
-    }
-
-    body[data-theme="dark"] {
-      --bg: #0b141a;
-      --fg: #e9edef;
-      --sidebar: #202c33;
-      --chat: #0b141a;
-      --border: #2a3942;
-    }
-
     * {
       box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
       height: 100vh;
-      overflow: hidden;
-    }
-
-    .app {
+      background: #0b141a;
+      color: #e9edef;
       display: flex;
-      height: 100vh;
     }
 
-    /* ================= Sidebar ================= */
-    .sidebar {
+    /* ====== SIDEBAR ====== */
+    #sidebar {
       width: 320px;
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
+      background: #111b21;
+      border-right: 1px solid #2a3942;
       display: flex;
       flex-direction: column;
     }
 
-    .sidebar-header {
-      height: 56px;
-      padding: 0 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
+    #sidebar header {
+      padding: 16px;
+      font-weight: bold;
+      border-bottom: 1px solid #2a3942;
     }
 
-    .sidebar-header span {
+    #room-form {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-bottom: 1px solid #2a3942;
+    }
+
+    #room-form input {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #202c33;
+      color: #e9edef;
+    }
+
+    #room-form button {
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #00a884;
+      color: black;
       font-weight: bold;
     }
 
-    .menu {
-      cursor: pointer;
-      font-size: 20px;
-    }
-
-    .sidebar-content {
-      padding: 16px;
+    #roster {
       flex: 1;
-    }
-
-    .sidebar-content input,
-    .sidebar-content button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 10px;
-      font-size: 14px;
-    }
-
-    /* ================= Chat ================= */
-    .chat {
-      flex: 1;
-      background: var(--chat);
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-header {
-      height: 56px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      padding: 0 12px;
-      gap: 12px;
-    }
-
-    .back {
-      display: none;
-      cursor: pointer;
-    }
-
-    .chat-body {
-      flex: 1;
-      padding: 16px;
       overflow-y: auto;
-    }
-
-    .chat-input {
-      height: 48px;
-      border-top: 1px solid var(--border);
-      display: flex;
-    }
-
-    .chat-input input {
-      flex: 1;
-      border: none;
       padding: 12px;
-      outline: none;
+    }
+
+    #roster div {
+      padding: 6px 0;
       font-size: 14px;
+      opacity: 0.85;
     }
 
-    /* ================= Mobile ================= */
-    @media (max-width: 767px) {
-      .chat {
-        display: none;
-      }
-
-      body.room-active .sidebar {
-        display: none;
-      }
-
-      body.room-active .chat {
-        display: flex;
-      }
-
-      .back {
-        display: inline;
-      }
-    }
-
-    /* ================= Dropdown ================= */
-    .dropdown {
-      position: absolute;
-      top: 56px;
-      right: 12px;
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      display: none;
+    /* ====== CHAT AREA ====== */
+    #chat {
+      flex: 1;
+      display: flex;
       flex-direction: column;
+      background: #0b141a;
     }
 
-    .dropdown button {
+    #chat-header {
+      padding: 16px;
+      border-bottom: 1px solid #2a3942;
+      background: #202c33;
+      font-weight: bold;
+    }
+
+    #chatlog {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .message {
+      margin-bottom: 8px;
+      max-width: 70%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #202c33;
+    }
+
+    .message.self {
+      margin-left: auto;
+      background: #005c4b;
+    }
+
+    #chat-input {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid #2a3942;
+      background: #202c33;
+    }
+
+    #chat-input input {
+      flex: 1;
       padding: 10px;
+      border-radius: 6px;
       border: none;
-      background: none;
-      cursor: pointer;
-      text-align: left;
-      color: var(--fg);
+      background: #111b21;
+      color: #e9edef;
     }
 
-    .dropdown button:hover {
-      background: var(--border);
+    #chat-input button {
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: #00a884;
+      color: black;
+      font-weight: bold;
+      cursor: pointer;
     }
   </style>
 </head>
 
 <body>
-  <div class="app">
+  <!-- ===== SIDEBAR ===== -->
+  <div id="sidebar">
+    <header>Edge Chat</header>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="sidebar-header">
-        <span>Edge Chat</span>
-        <div class="menu" id="menuBtn">⋮</div>
-        <div class="dropdown" id="dropdown">
-          <button id="toggleTheme">Toggle Day / Night</button>
-        </div>
-      </div>
+    <form id="room-form">
+      <input id="name" placeholder="Your name" autocomplete="off" />
+      <input id="room" placeholder="Room name" autocomplete="off" />
+      <button type="submit">Join / Create</button>
+    </form>
 
-      <div class="sidebar-content">
-        <input id="username" placeholder="your name" />
-        <input id="roomname" placeholder="room name" />
-        <button onclick="enterRoom()">Enter Room</button>
-      </div>
-    </div>
-
-    <!-- Chat -->
-    <div class="chat">
-      <div class="chat-header">
-        <div class="back" onclick="exitRoom()">←</div>
-        <span id="roomTitle">Room</span>
-      </div>
-
-      <div class="chat-body" id="chatlog">
-        <!-- messages -->
-      </div>
-
-      <div class="chat-input">
-        <input placeholder="Type a message…" />
-      </div>
-    </div>
-
+    <div id="roster"></div>
   </div>
 
+  <!-- ===== CHAT ===== -->
+  <div id="chat">
+    <div id="chat-header">Room</div>
+
+    <div id="chatlog"></div>
+
+    <form id="chat-input">
+      <input id="message" placeholder="Type a message…" autocomplete="off" />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+
+  <!-- ===== LOGIC (UNCHANGED CONTRACT) ===== -->
   <script>
-    const menuBtn = document.getElementById("menuBtn");
-    const dropdown = document.getElementById("dropdown");
-    const toggleTheme = document.getElementById("toggleTheme");
+    let ws;
+    let myName;
+    let roomName;
 
-    menuBtn.onclick = () => {
-      dropdown.style.display =
-        dropdown.style.display === "flex" ? "none" : "flex";
+    const roster = document.getElementById("roster");
+    const chatlog = document.getElementById("chatlog");
+
+    function addMessage(text, self = false) {
+      const div = document.createElement("div");
+      div.className = "message" + (self ? " self" : "");
+      div.textContent = text;
+      chatlog.appendChild(div);
+      chatlog.scrollTop = chatlog.scrollHeight;
+    }
+
+    function connect() {
+      ws = new WebSocket(
+        (location.protocol === "https:" ? "wss://" : "ws://") +
+        location.host +
+        "/api/room/" +
+        encodeURIComponent(roomName) +
+        "/websocket"
+      );
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ name: myName }));
+      };
+
+      ws.onmessage = event => {
+        const data = JSON.parse(event.data);
+
+        if (data.joined) {
+          const div = document.createElement("div");
+          div.textContent = data.joined;
+          roster.appendChild(div);
+        } else if (data.quit) {
+          [...roster.children].forEach(n => {
+            if (n.textContent === data.quit) n.remove();
+          });
+        } else if (data.message) {
+          addMessage(data.name + ": " + data.message, data.name === myName);
+        }
+      };
+    }
+
+    document.getElementById("room-form").onsubmit = e => {
+      e.preventDefault();
+      myName = document.getElementById("name").value.trim();
+      roomName = document.getElementById("room").value.trim();
+      if (!myName || !roomName) return;
+      roster.innerHTML = "";
+      chatlog.innerHTML = "";
+      document.getElementById("chat-header").textContent = roomName;
+      connect();
     };
 
-    toggleTheme.onclick = () => {
-      const next =
-        document.body.dataset.theme === "dark" ? "light" : "dark";
-      document.body.dataset.theme = next;
-      localStorage.setItem("theme", next);
-      dropdown.style.display = "none";
+    document.getElementById("chat-input").onsubmit = e => {
+      e.preventDefault();
+      const input = document.getElementById("message");
+      if (!input.value) return;
+      ws.send(JSON.stringify({ message: input.value }));
+      input.value = "";
     };
-
-    function enterRoom() {
-      document.body.classList.add("room-active");
-      document.getElementById("roomTitle").innerText =
-        document.getElementById("roomname").value || "Room";
-    }
-
-    function exitRoom() {
-      document.body.classList.remove("room-active");
-    }
-
-    // restore theme
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme) {
-      document.body.dataset.theme = savedTheme;
-    }
   </script>
 </body>
 </html>
