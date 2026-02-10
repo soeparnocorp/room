@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>READTALK - Enhanced Chat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            height: calc(100vh - 40px);
+        }
+        
+        /* Left Panel - Sidebar */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        /* Main Chat Area */
+        .chat-area {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Chat Messages */
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: rgba(249, 250, 251, 0.5);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            padding: 12px 16px;
+            border-radius: 12px;
+            max-width: 70%;
+            word-wrap: break-word;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .message.self {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            align-self: flex-end;
+        }
+        
+        .message.other {
+            background: #f3f4f6;
+            align-self: flex-start;
+        }
+        
+        .message.system {
+            background: #fef3c7;
+            align-self: center;
+            text-align: center;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+        
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+        
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        #nameInput, #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        #nameInput:focus, #messageInput:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        /* Stats Panel */
+        .stats-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 10px;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 20px;
+            background: #f3f4f6;
+            padding: 5px;
+            border-radius: 10px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: none;
+            background: none;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* File Upload */
+        .file-upload {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(249, 250, 251, 0.8);
+            border-radius: 10px;
+        }
+        
+        .file-list {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            padding: 8px;
+            background: white;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item button {
+            padding: 4px 12px;
+            font-size: 0.8em;
+        }
+        
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                max-height: 300px;
+            }
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6b7280;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            border-left: 5px solid #10b981;
+        }
+        
+        .notification.error {
+            border-left: 5px solid #ef4444;
+        }
+        
+        .notification.info {
+            border-left: 5px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Sidebar -->
+        <div class="sidebar">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('chat')">💬 Chat</button>
+                <button class="tab" onclick="switchTab('files')">📁 Files</button>
+                <button class="tab" onclick="switchTab('stats')">📊 Stats</button>
+            </div>
+            
+            <!-- Chat Tab -->
+            <div id="chat-tab" class="tab-content active">
+                <h2>READTALK Chat</h2>
+                <div style="margin: 15px 0;">
+                    <input type="text" id="nameInput" placeholder="Enter your name..." maxlength="32">
+                    <button onclick="setName()" style="width: 100%; margin-top: 10px;">Set Name</button>
+                </div>
+                
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span>Room ID:</span>
+                        <span id="roomId" class="stat-value">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Users Online:</span>
+                        <span id="onlineCount" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Messages:</span>
+                        <span id="messageCount" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Connection:</span>
+                        <span id="connectionStatus" class="stat-value">❌ Disconnected</span>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <h3>Room Controls</h3>
+                    <button onclick="createNewRoom()" style="width: 100%; margin-bottom: 10px;">🆕 New Room</button>
+                    <button onclick="exportChat()" style="width: 100%; margin-bottom: 10px;">💾 Export Chat</button>
+                    <button onclick="clearLocalChat()" style="width: 100%;">🗑️ Clear Chat</button>
+                </div>
+                
+                <div style="margin-top: 20px; font-size: 0.8em; color: #6b7280;">
+                    <p><strong>Bindings Active:</strong></p>
+                    <p>✅ Durable Objects (Chat Rooms)</p>
+                    <p>✅ KV Storage (Session Data)</p>
+                    <p>✅ D1 Database (Analytics)</p>
+                    <p>✅ R2 Bucket (File Storage)</p>
+                </div>
+            </div>
+            
+            <!-- Files Tab -->
+            <div id="files-tab" class="tab-content">
+                <h2>File Storage</h2>
+                <div class="file-upload">
+                    <input type="file" id="fileInput" style="width: 100%; margin-bottom: 10px;">
+                    <button onclick="uploadFile()" style="width: 100%;">📤 Upload to R2</button>
+                    <div id="fileList" class="file-list">
+                        <div class="loading">Loading files...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats Tab -->
+            <div id="stats-tab" class="tab-content">
+                <h2>System Stats</h2>
+                <div class="stats-panel">
+                    <div class="stat-item">
+                        <span>KV Keys:</span>
+                        <span id="kvStats" class="stat-value">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>R2 Files:</span>
+                        <span id="r2Stats" class="stat-value">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>DB Records:</span>
+                        <span id="dbStats" class="stat-value">Loading...</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>Worker Status:</span>
+                        <span id="workerStatus" class="stat-value">✅ Healthy</span>
+                    </div>
+                </div>
+                
+                <button onclick="refreshStats()" style="width: 100%; margin-top: 20px;">🔄 Refresh Stats</button>
+                
+                <div style="margin-top: 20px;">
+                    <h3>System Actions</h3>
+                    <button onclick="testKV()" style="width: 100%; margin-bottom: 10px;">Test KV</button>
+                    <button onclick="testDB()" style="width: 100%; margin-bottom: 10px;">Test Database</button>
+                    <button onclick="testR2()" style="width: 100%;">Test File Storage</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Chat Area -->
+        <div class="chat-area">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1>💬 READTALK Chat Room</h1>
+                <div id="connectionIndicator" style="display: flex; align-items: center; gap: 10px;">
+                    <div id="wsIndicator" style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444;"></div>
+                    <span id="wsStatus">Connecting...</span>
+                </div>
+            </div>
+            
+            <div id="messages">
+                <div class="message system">
+                    Welcome to READTALK! Enter your name to start chatting.
+                </div>
+            </div>
+            
+            <div class="input-area">
+                <input type="text" id="messageInput" placeholder="Type your message..." maxlength="256" disabled>
+                <button id="sendButton" onclick="sendMessage()" disabled>Send</button>
+            </div>
+            
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="sendTestMessage()">Test Message</button>
+                <button onclick="toggleNotifications()">🔔 Toggle Notifications</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+    
+    <script>
+        // Global variables
+        let ws = null;
+        let userName = localStorage.getItem('readtalk_username') || '';
+        let roomId = getRoomIdFromURL();
+        let messageCount = 0;
+        let onlineUsers = new Set();
+        let notificationsEnabled = true;
+        let currentTab = 'chat';
+        
+        // DOM Elements
+        const nameInput = document.getElementById('nameInput');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const messagesDiv = document.getElementById('messages');
+        const roomIdSpan = document.getElementById('roomId');
+        const onlineCountSpan = document.getElementById('onlineCount');
+        const messageCountSpan = document.getElementById('messageCount');
+        const connectionStatusSpan = document.getElementById('connectionStatus');
+        const wsIndicator = document.getElementById('wsIndicator');
+        const wsStatusSpan = document.getElementById('wsStatus');
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set username if exists
+            if (userName) {
+                nameInput.value = userName;
+                updateUIForConnectedUser();
+            }
+            
+            // Set room ID display
+            roomIdSpan.textContent = roomId || 'Not joined';
+            
+            // Connect to WebSocket
+            connectWebSocket();
+            
+            // Load initial stats
+            refreshStats();
+            loadFiles();
+            
+            // Event listeners
+            messageInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !sendButton.disabled) {
+                    sendMessage();
+                }
+            });
+            
+            // Enable notifications if supported
+            if ('Notification' in window) {
+                Notification.requestPermission();
+            }
+        });
+        
+        // Tab switching
+        function switchTab(tabName) {
+            // Update tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activate selected tab
+            document.querySelector(`.tab[onclick*="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            currentTab = tabName;
+            
+            // Refresh tab content
+            if (tabName === 'files') {
+                loadFiles();
+            } else if (tabName === 'stats') {
+                refreshStats();
+            }
+        }
+        
+        // WebSocket functions
+        function connectWebSocket() {
+            if (!roomId) {
+                showNotification('No room selected. Creating new room...', 'info');
+                createNewRoom();
+                return;
+            }
+            
+            updateConnectionStatus('Connecting...', '#f59e0b');
+            
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/api/room/${roomId}/websocket`;
+            
+            ws = new WebSocket(wsUrl);
+            
+            ws.onopen = () => {
+                updateConnectionStatus('Connected', '#10b981');
+                showNotification('Connected to chat room!', 'success');
+                console.log('WebSocket connected to room:', roomId);
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleWebSocketMessage(data);
+            };
+            
+            ws.onclose = () => {
+                updateConnectionStatus('Disconnected', '#ef4444');
+                showNotification('Disconnected from chat. Reconnecting...', 'error');
+                
+                // Attempt reconnect after 3 seconds
+                setTimeout(() => {
+                    if (!roomId) return;
+                    connectWebSocket();
+                }, 3000);
+            };
+            
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+                updateConnectionStatus('Error', '#ef4444');
+            };
+        }
+        
+        function updateConnectionStatus(status, color) {
+            connectionStatusSpan.textContent = status;
+            wsStatusSpan.textContent = status;
+            wsIndicator.style.background = color;
+        }
+        
+        function handleWebSocketMessage(data) {
+            if (data.error) {
+                showNotification(`Error: ${data.error}`, 'error');
+                return;
+            }
+            
+            if (data.ready) {
+                // User is ready to chat
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+                showNotification(`Welcome ${userName}! You can start chatting.`, 'success');
+                return;
+            }
+            
+            if (data.joined) {
+                // User joined
+                onlineUsers.add(data.joined);
+                updateOnlineCount();
+                addSystemMessage(`${data.joined} joined the chat`);
+                showNotification(`${data.joined} joined the room`, 'info');
+                return;
+            }
+            
+            if (data.quit) {
+                // User left
+                onlineUsers.delete(data.quit);
+                updateOnlineCount();
+                addSystemMessage(`${data.quit} left the chat`);
+                return;
+            }
+            
+            if (data.name && data.message) {
+                // Regular message
+                messageCount++;
+                messageCountSpan.textContent = messageCount;
+                
+                const isSelf = data.name === userName;
+                addMessage(data.name, data.message, isSelf, data.timestamp);
+                
+                // Desktop notification
+                if (!isSelf && notificationsEnabled && 'Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`New message from ${data.name}`, {
+                        body: data.message,
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
+        }
+        
+        // Chat functions
+        function setName() {
+            const name = nameInput.value.trim();
+            if (!name) {
+                showNotification('Please enter a name', 'error');
+                return;
+            }
+            
+            if (name.length > 32) {
+                showNotification('Name too long (max 32 characters)', 'error');
+                return;
+            }
+            
+            userName = name;
+            localStorage.setItem('readtalk_username', name);
+            
+            // Send name to WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ name: userName }));
+            }
+            
+            updateUIForConnectedUser();
+            showNotification(`Name set to: ${userName}`, 'success');
+        }
+        
+        function updateUIForConnectedUser() {
+            document.querySelector('h2').textContent = `👋 Hello, ${userName}`;
+            nameInput.disabled = true;
+            document.querySelector('button[onclick="setName()"]').disabled = true;
+        }
+        
+        function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) {
+                showNotification('Message cannot be empty', 'error');
+                return;
+            }
+            
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                showNotification('Not connected to chat', 'error');
+                return;
+            }
+            
+            if (message.length > 256) {
+                showNotification('Message too long (max 256 characters)', 'error');
+                return;
+            }
+            
+            ws.send(JSON.stringify({ message: message }));
+            messageInput.value = '';
+            messageInput.focus();
+        }
+        
+        function sendTestMessage() {
+            const testMessages = [
+                "Hello everyone! 👋",
+                "How's everyone doing today?",
+                "This chat is powered by Cloudflare Workers! ⚡",
+                "Check out the file upload feature! 📁",
+                "Try uploading an image to R2 storage!",
+                "All chat data is stored across KV, D1, and R2! 🗄️"
+            ];
+            
+            const randomMessage = testMessages[Math.floor(Math.random() * testMessages.length)];
+            
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ message: randomMessage }));
+                showNotification('Test message sent!', 'success');
+            } else {
+                showNotification('Not connected to chat', 'error');
+            }
+        }
+        
+        // UI Update functions
+        function addMessage(sender, message, isSelf, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSelf ? 'self' : 'other'}`;
+            
+            const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span>${isSelf ? 'You' : sender}</span>
+                    <span>${time}</span>
+                </div>
+                <div>${escapeHtml(message)}</div>
+            `;
+            
+            messagesDiv.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        function addSystemMessage(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message system';
+            messageDiv.textContent = text;
+            messagesDiv.appendChild(messageDiv);
+            scrollToBottom();
+        }
+        
+        function updateOnlineCount() {
+            onlineCountSpan.textContent = onlineUsers.size;
+        }
+        
+        function scrollToBottom() {
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+        
+        // Room management
+        function createNewRoom() {
+            fetch('/api/room', {
+                method: 'POST'
+            })
+            .then(response => response.text())
+            .then(newRoomId => {
+                // Update URL without reload
+                const newUrl = `${window.location.origin}/?room=${newRoomId}`;
+                window.history.pushState({}, '', newUrl);
+                
+                roomId = newRoomId;
+                roomIdSpan.textContent = roomId;
+                
+                // Clear chat and reconnect
+                clearChat();
+                connectWebSocket();
+                
+                showNotification(`New room created: ${newRoomId}`, 'success');
+                
+                // Log to analytics via KV
+                logEvent('room_created', { roomId: newRoomId });
+            })
+            .catch(error => {
+                showNotification(`Failed to create room: ${error.message}`, 'error');
+            });
+        }
+        
+        function exportChat() {
+            const messages = [];
+            document.querySelectorAll('#messages .message').forEach(msg => {
+                const sender = msg.querySelector('.message-header span:first-child').textContent;
+                const time = msg.querySelector('.message-header span:last-child').textContent;
+                const content = msg.querySelector('div:last-child').textContent;
+                messages.push({ sender, time, content });
+            });
+            
+            const blob = new Blob([JSON.stringify(messages, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chat-export-${roomId}-${Date.now()}.json`;
+            a.click();
+            
+            showNotification('Chat exported successfully!', 'success');
+        }
+        
+        function clearLocalChat() {
+            if (confirm('Clear all chat messages locally?')) {
+                clearChat();
+                showNotification('Chat cleared locally', 'info');
+            }
+        }
+        
+        function clearChat() {
+            // Keep only system messages
+            const systemMessages = Array.from(messagesDiv.querySelectorAll('.message.system'));
+            messagesDiv.innerHTML = '';
+            systemMessages.forEach(msg => messagesDiv.appendChild(msg));
+            
+            messageCount = 0;
+            messageCountSpan.textContent = '0';
+            onlineUsers.clear();
+            updateOnlineCount();
+        }
+        
+        // File management (R2)
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('Please select a file first', 'error');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                showNotification('File too large (max 10MB)', 'error');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch(`/api/files/${file.name}`, {
+                    method: 'POST',
+                    body: file
+                });
+                
+                if (response.ok) {
+                    showNotification(`File uploaded: ${file.name}`, 'success');
+                    loadFiles();
+                    fileInput.value = '';
+                    
+                    // Share file link in chat
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ 
+                            message: `📎 Uploaded file: ${file.name} (${formatFileSize(file.size)})` 
+                        }));
+                    }
+                } else {
+                    throw new Error('Upload failed');
+                }
+            } catch (error) {
+                showNotification(`Upload failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadFiles() {
+            const fileListDiv = document.getElementById('fileList');
+            
+            try {
+                const response = await fetch('/api/files');
+                const files = await response.json();
+                
+                if (files.length === 0) {
+                    fileListDiv.innerHTML = '<div class="loading">No files uploaded yet</div>';
+                    return;
+                }
+                
+                fileListDiv.innerHTML = files.map(file => `
+                    <div class="file-item">
+                        <span>${file.key}</span>
+                        <div>
+                            <button onclick="downloadFile('${file.key}')">Download</button>
+                            <button onclick="deleteFile('${file.key}')" style="background: #ef4444;">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Update stats
+                document.getElementById('r2Stats').textContent = files.length;
+            } catch (error) {
+                fileListDiv.innerHTML = '<div class="loading" style="color: #ef4444;">Failed to load files</div>';
+            }
+        }
+        
+        async function downloadFile(filename) {
+            try {
+                const response = await fetch(`/api/files/${filename}`);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = filename;
+                    a.click();
+                    showNotification(`Downloading: ${filename}`, 'success');
+                }
+            } catch (error) {
+                showNotification(`Download failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function deleteFile(filename) {
+            if (!confirm(`Delete ${filename}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/files/${filename}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showNotification(`Deleted: ${filename}`, 'success');
+                    loadFiles();
+                }
+            } catch (error) {
+                showNotification(`Delete failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Stats and monitoring
+        async function refreshStats() {
+            try {
+                // Get health status
+                const healthResponse = await fetch('/health');
+                const health = await healthResponse.json();
+                
+                document.getElementById('workerStatus').textContent = 
+                    health.status === 'ok' ? '✅ Healthy' : '❌ Unhealthy';
+                
+                // Get KV stats
+                const kvResponse = await fetch('/api/kv');
+                const kvData = await kvResponse.json();
+                document.getElementById('kvStats').textContent = kvData.length || '0';
+                
+                // Get DB stats
+                const dbResponse = await fetch('/api/db');
+                const dbData = await dbResponse.json();
+                document.getElementById('dbStats').textContent = 
+                    dbData.total_rooms || dbData.count || '0';
+                
+                showNotification('Stats updated successfully', 'success');
+            } catch (error) {
+                showNotification(`Failed to load stats: ${error.message}`, 'error');
+            }
+        }
+        
+        // Test functions for bindings
+        async function testKV() {
+            try {
+                const testKey = `test_${Date.now()}`;
+                const testValue = `Test value at ${new Date().toLocaleTimeString()}`;
+                
+                // Write
+                await fetch(`/api/kv/${testKey}`, {
+                    method: 'PUT',
+                    body: testValue
+                });
+                
+                // Read
+                const response = await fetch(`/api/kv/${testKey}`);
+                const value = await response.text();
+                
+                if (value === testValue) {
+                    showNotification('✅ KV test passed!', 'success');
+                } else {
+                    throw new Error('Read value mismatch');
+                }
+                
+                refreshStats();
+            } catch (error) {
+                showNotification(`❌ KV test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDB() {
+            try {
+                const response = await fetch('/api/db');
+                const data = await response.json();
+                showNotification(`✅ Database connected. Records: ${data.total_rooms || '0'}`, 'success');
+                refreshStats();
+            } catch (error) {
+                showNotification(`❌ Database test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testR2() {
+            try {
+                const testFile = new Blob(['Test file content'], { type: 'text/plain' });
+                
+                const response = await fetch('/api/files/test.txt', {
+                    method: 'POST',
+                    body: testFile
+                });
+                
+                if (response.ok) {
+                    showNotification('✅ R2 test passed! Test file uploaded.', 'success');
+                    loadFiles();
+                }
+            } catch (error) {
+                showNotification(`❌ R2 test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        function toggleNotifications() {
+            notificationsEnabled = !notificationsEnabled;
+            showNotification(
+                notificationsEnabled ? '🔔 Notifications enabled' : '🔕 Notifications disabled',
+                'info'
+            );
+        }
+        
+        // Utility functions
+        function getRoomIdFromURL() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('room') || '';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function logEvent(eventType, data) {
+            // Simple client-side logging
+            console.log(`[${eventType}]`, data);
+            
+            // Could be extended to send to server for KV storage
+            fetch('/api/kv', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    key: `event_${eventType}_${Date.now()}`,
+                    value: JSON.stringify(data)
+                })
+            }).catch(() => {
+                // Silent fail for logging
+            });
+        }
+        
+        function showNotification(message, type = 'info') {
+            if (!notificationsEnabled && type !== 'error') return;
+            
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            notification.style.borderLeftColor = 
+                type === 'success' ? '#10b981' : 
+                type === 'error' ? '#ef4444' : '#3b82f6';
+            
+            container.appendChild(notification);
+            
+            // Show
+            setTimeout(() => notification.classList.add('show'), 10);
+            
+            // Auto remove
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 5000);
+        }
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to send
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                sendMessage();
+            }
+            
+            // Ctrl/Cmd + N for new room
+            if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                e.preventDefault();
+                createNewRoom();
+            }
+            
+            // Escape to clear message input
+            if (e.key === 'Escape') {
+                messageInput.value = '';
+            }
+            
+            // Tab switching shortcuts
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === '1') {
+                    e.preventDefault();
+                    switchTab('chat');
+                } else if (e.key === '2') {
+                    e.preventDefault();
+                    switchTab('files');
+                } else if (e.key === '3') {
+                    e.preventDefault();
+                    switchTab('stats');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
