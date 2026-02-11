@@ -1,3 +1,5 @@
+jadi ini salah?
+
 name = "room"
 compatibility_date = "2024-01-01"
 main = "src/chat.mjs"
@@ -30,7 +32,13 @@ bindings = [
 # ============ MIGRATIONS ============
 [[migrations]]
 tag = "v1"
-new_classes = ["ChatRoom", "RateLimiter"]
+new_classes = ["ChatRoom", "RateLimiter"]  # GANTI: new_sqlite_classes → new_classes
+
+# ============ RULES ============
+[[rules]]
+type = "Data"
+globs = ["**/*.html"]
+fallthrough = false
 
 # ============ OBSERVABILITY ============
 [observability]
@@ -55,4 +63,4 @@ port = 8787
 local_protocol = "http"
 
 [build]
-upload.format = "service-worker"
+upload.format = "service-worker"  # atau "modules" tergantung setup
