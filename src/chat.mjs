@@ -1,6 +1,5 @@
 import HTML from "./chat.html";
 
-// Helper untuk error handling
 async function handleErrors(request, func) {
   try {
     return await func();
@@ -25,24 +24,12 @@ async function handleErrors(request, func) {
   }
 }
 
-// Main worker
 export default {
   async fetch(request, env, ctx) {
     return await handleErrors(request, async () => {
       let url = new URL(request.url);
       let path = url.pathname.slice(1).split('/');
       
-      console.log(`Request: ${request.method} ${url.pathname}`, {
-        path: path,
-        bindingAvailable: {
-          KV: !!env.READTALK_KV,
-          DB: !!env.READTALK_DB,
-          R2: !!env.READTALK_R2,
-          rooms: !!env.rooms,
-          limiters: !!env.limiters
-        }
-      });
-
       // Serve HTML frontend
       if (!path[0]) {
         return new Response(HTML, {
@@ -53,7 +40,6 @@ export default {
         });
       }
 
-      // API routes
       switch (path[0]) {
         case "api":
           return await handleApiRequest(path.slice(1), request, env, ctx);
@@ -61,7 +47,6 @@ export default {
         case "health":
           return new Response(JSON.stringify({
             status: "healthy",
-            timestamp: new Date().toISOString(),
             bindings: {
               KV: !!env.READTALK_KV,
               DB: !!env.READTALK_DB,
@@ -70,10 +55,7 @@ export default {
               limiters: !!env.limiters
             }
           }), {
-            headers: { 
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
+            headers: { "Content-Type": "application/json" }
           });
           
         default:
@@ -83,48 +65,22 @@ export default {
   }
 };
 
-// API Request Handler dengan semua binding
+// ============ API HANDLER ============
 async function handleApiRequest(path, request, env, ctx) {
-  const url = new URL(request.url);
-  
   switch (path[0]) {
-    // ============ CHAT ROOMS ============
     case "room": {
       if (!path[1]) {
         if (request.method == "POST") {
-          // Create new room
           let id = env.rooms.newUniqueId();
           
-          // Log room creation to KV
-          await env.READTALK_KV.put(
-            `room_created_${id.toString()}`,
-            JSON.stringify({
-              id: id.toString(),
-              timestamp: new Date().toISOString(),
-              ip: request.headers.get("CF-Connecting-IP")
-            }),
-            { expirationTtl: 86400 } // 24 hours
-          );
-          
-          // Log to D1 database jika ada table
-          try {
-            await env.READTALK_DB.prepare(
-              "INSERT INTO room_logs (room_id, created_at, ip) VALUES (?, ?, ?)"
-            ).bind(id.toString(), Date.now(), request.headers.get("CF-Connecting-IP")).run();
-          } catch (e) {
-            // Table might not exist yet, ignore
-            console.log("D1 room logging skipped:", e.message);
-          }
+          // KIRIM KE QUEUE instead of langsung KV
+          ctx.waitUntil(logRoomCreation(env, id.toString(), request));
           
           return new Response(id.toString(), {
-            headers: { 
-              "Content-Type": "text/plain",
-              "Access-Control-Allow-Origin": "*"
-            }
+            headers: { "Access-Control-Allow-Origin": "*" }
           });
-        } else {
-          return new Response("Method not allowed", { status: 405 });
         }
+        return new Response("Method not allowed", { status: 405 });
       }
 
       let name = path[1];
@@ -144,279 +100,92 @@ async function handleApiRequest(path, request, env, ctx) {
 
       return roomObject.fetch(newUrl, request);
     }
-
-    // ============ KV STORAGE OPERATIONS ============
-    case "kv": {
-      const key = path[1];
-      
-      switch (request.method) {
-        case "GET":
-          if (!key) {
-            // List all keys with prefix
-            const list = await env.READTALK_KV.list();
-            return new Response(JSON.stringify(list.keys), {
-              headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            });
-          }
-          
-          const value = await env.READTALK_KV.get(key);
-          if (value === null) {
-            return new Response("Not found", { status: 404 });
-          }
-          
-          return new Response(value, {
-            headers: { 
-              "Content-Type": "text/plain",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
-          
-        case "POST":
-        case "PUT":
-          const data = await request.text();
-          const metadata = path[2] ? { metadata: JSON.parse(path[2]) } : {};
-          
-          await env.READTALK_KV.put(key, data, metadata);
-          
-          return new Response(JSON.stringify({ success: true, key }), {
-            headers: { 
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
-          
-        case "DELETE":
-          await env.READTALK_KV.delete(key);
-          return new Response(JSON.stringify({ success: true }), {
-            headers: { 
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
-          
-        default:
-          return new Response("Method not allowed", { status: 405 });
+    
+    // ============ ENDPOINT PISAH UNTUK LOGGING ============
+    case "logs": {
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405 });
       }
-    }
-
-    // ============ DATABASE OPERATIONS ============
-    case "db": {
-      switch (request.method) {
-        case "GET":
-          try {
-            // Contoh query untuk chat statistics
-            const stats = await env.READTALK_DB.prepare(`
-              SELECT 
-                COUNT(*) as total_rooms,
-                COUNT(DISTINCT ip) as unique_ips,
-                MAX(created_at) as last_created
-              FROM room_logs
-            `).first();
-            
-            return new Response(JSON.stringify(stats || { message: "No data yet" }), {
-              headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            });
-          } catch (e) {
-            return new Response(JSON.stringify({ 
-              error: e.message,
-              suggestion: "Run migrations to create tables"
-            }), {
-              status: 500,
-              headers: { "Content-Type": "application/json" }
-            });
-          }
+      
+      // Handle logging di endpoint terpisah
+      const { roomId, type, data } = await request.json();
+      
+      switch (type) {
+        case "message":
+          await env.READTALK_DB?.prepare(
+            "INSERT INTO messages (room_id, username, message, timestamp) VALUES (?, ?, ?, ?)"
+          ).bind(roomId, data.name, data.message, data.timestamp).run().catch(() => {});
+          break;
           
-        case "POST":
-          // Untuk running migrations atau queries dari API
-          const { query, params = [] } = await request.json();
-          
-          try {
-            const stmt = env.READTALK_DB.prepare(query);
-            const result = await stmt.bind(...params).run();
-            
-            return new Response(JSON.stringify(result), {
-              headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            });
-          } catch (e) {
-            return new Response(JSON.stringify({ error: e.message }), {
-              status: 400,
-              headers: { "Content-Type": "application/json" }
-            });
-          }
-          
-        default:
-          return new Response("Method not allowed", { status: 405 });
+        case "session":
+          await env.READTALK_KV?.put(
+            `session_${roomId}_${Date.now()}`,
+            JSON.stringify(data),
+            { expirationTtl: 86400 }
+          ).catch(() => {});
+          break;
       }
-    }
-
-    // ============ FILE UPLOAD/DOWNLOAD (R2) ============
-    case "files": {
-      const fileName = path[1];
       
-      switch (request.method) {
-        case "GET":
-          if (!fileName) {
-            // List files in bucket
-            const objects = await env.READTALK_R2.list();
-            return new Response(JSON.stringify(objects.objects), {
-              headers: { 
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*"
-              }
-            });
-          }
-          
-          const object = await env.READTALK_R2.get(fileName);
-          
-          if (object === null) {
-            return new Response("File not found", { status: 404 });
-          }
-          
-          const headers = new Headers();
-          object.writeHttpMetadata(headers);
-          headers.set("etag", object.httpEtag);
-          headers.set("Access-Control-Allow-Origin", "*");
-          
-          return new Response(object.body, { headers });
-          
-        case "POST":
-        case "PUT":
-          if (!fileName) {
-            return new Response("Filename required", { status: 400 });
-          }
-          
-          const fileData = await request.arrayBuffer();
-          await env.READTALK_R2.put(fileName, fileData, {
-            httpMetadata: request.headers
-          });
-          
-          // Log file upload to KV
-          await env.READTALK_KV.put(
-            `file_upload_${fileName}`,
-            JSON.stringify({
-              fileName,
-              timestamp: new Date().toISOString(),
-              size: fileData.byteLength,
-              type: request.headers.get("Content-Type") || "unknown"
-            }),
-            { expirationTtl: 604800 } // 7 days
-          );
-          
-          return new Response(JSON.stringify({ 
-            success: true, 
-            fileName,
-            size: fileData.byteLength
-          }), {
-            headers: { 
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
-          
-        case "DELETE":
-          await env.READTALK_R2.delete(fileName);
-          return new Response(JSON.stringify({ success: true }), {
-            headers: { 
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "*"
-            }
-          });
-          
-        default:
-          return new Response("Method not allowed", { status: 405 });
+      return new Response("OK", { status: 200 });
+    }
+    
+    // ============ ENDPOINT ARCHIVE ============
+    case "archive": {
+      if (request.method !== "POST") {
+        return new Response("Method not allowed", { status: 405 });
       }
-    }
-
-    // ============ STATISTICS & ANALYTICS ============
-    case "stats": {
-      // Aggregate stats from all bindings
-      const [kvStats, dbStats, r2Stats] = await Promise.all([
-        env.READTALK_KV.list().then(list => list.keys.length).catch(() => 0),
-        env.READTALK_DB.prepare("SELECT COUNT(*) as count FROM room_logs").first()
-          .then(row => row?.count || 0)
-          .catch(() => 0),
-        env.READTALK_R2.list().then(list => list.objects.length).catch(() => 0)
-      ]);
       
-      return new Response(JSON.stringify({
-        timestamp: new Date().toISOString(),
-        bindings: {
-          KV: { total_keys: kvStats },
-          DB: { total_rooms: dbStats },
-          R2: { total_files: r2Stats }
-        },
-        system: {
-          durable_objects: {
-            rooms: "active",
-            limiters: "active"
-          }
-        }
-      }), {
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
-    }
-
-    // ============ RATE LIMITING TEST ============
-    case "ratelimit-test": {
-      const ip = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
-      const limiterId = env.limiters.idFromName(ip);
-      const limiter = env.limiters.get(limiterId);
+      const { roomId, messages } = await request.json();
       
-      const response = await limiter.fetch("https://dummy-url", {
-        method: "POST"
-      });
+      // Archive R2 background
+      ctx.waitUntil(archiveRoom(env, roomId, messages));
       
-      const cooldown = await response.text();
-      
-      return new Response(JSON.stringify({
-        ip,
-        limiterId: limiterId.toString(),
-        cooldown: parseFloat(cooldown),
-        message: cooldown > 0 ? "Rate limited" : "OK"
-      }), {
-        headers: { 
-          "Content-Type": "application/json",
-          "Access-Control-Allow-Origin": "*"
-        }
-      });
-    }
-
-    default:
-      return new Response(JSON.stringify({ 
-        error: "Endpoint not found",
-        available_endpoints: [
-          "POST /api/room - Create new chat room",
-          "GET /api/kv/[key] - Get from KV",
-          "GET /api/db - Get database stats",
-          "GET /api/files - List files",
-          "GET /api/stats - System statistics",
-          "GET /api/ratelimit-test - Test rate limiting"
-        ]
-      }), {
-        status: 404,
+      return new Response(JSON.stringify({ success: true }), {
         headers: { "Content-Type": "application/json" }
       });
+    }
+    
+    default:
+      return new Response("Not found", { status: 404 });
   }
 }
 
-// ============ DURABLE OBJECT: CHAT ROOM ============
+// ============ BACKGROUND FUNCTIONS ============
+async function logRoomCreation(env, roomId, request) {
+  if (!env.READTALK_KV) return;
+  
+  await env.READTALK_KV.put(
+    `room_created_${roomId}`,
+    JSON.stringify({
+      id: roomId,
+      timestamp: new Date().toISOString(),
+      ip: request.headers.get("CF-Connecting-IP")
+    }),
+    { expirationTtl: 86400 }
+  ).catch(() => {});
+}
+
+async function archiveRoom(env, roomId, messages) {
+  if (!env.READTALK_R2) return;
+  
+  const archiveKey = `archive_${roomId}_${Date.now()}.json`;
+  await env.READTALK_R2.put(
+    archiveKey,
+    JSON.stringify({
+      roomId,
+      timestamp: new Date().toISOString(),
+      messages
+    })
+  ).catch(() => {});
+}
+
+// ============ CHAT ROOM ============
+// PURE: Chat, WebSocket, broadcast
 export class ChatRoom {
   constructor(state, env) {
     this.state = state;
     this.storage = state.storage;
-    this.env = env;  // Access to all bindings: KV, DB, R2
+    this.env = env;  // env save binding
     this.sessions = new Map();
     this.lastTimestamp = 0;
     
@@ -428,12 +197,10 @@ export class ChatRoom {
         () => this.env.limiters.get(limiterId),
         err => webSocket.close(1011, err.stack)
       );
-
+      
       let blockedMessages = [];
       this.sessions.set(webSocket, { ...meta, limiter, blockedMessages });
     });
-    
-    console.log(`ChatRoom initialized: ${state.id.toString()}`);
   }
 
   async fetch(request) {
@@ -454,65 +221,6 @@ export class ChatRoom {
           return new Response(null, { status: 101, webSocket: pair[0] });
         }
         
-        case "/info": {
-          // Get room info with stats from all bindings
-          const roomId = this.state.id.toString();
-          
-          // Get from KV if exists
-          const roomData = await this.env.READTALK_KV.get(`room_${roomId}`)
-            .then(data => data ? JSON.parse(data) : null)
-            .catch(() => null);
-          
-          return new Response(JSON.stringify({
-            roomId,
-            sessions: this.sessions.size,
-            storageSize: (await this.storage.list()).size,
-            customData: roomData,
-            timestamp: new Date().toISOString()
-          }), {
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-        
-        case "/archive": {
-          // Archive chat history to R2
-          if (request.method !== "POST") {
-            return new Response("Method not allowed", { status: 405 });
-          }
-          
-          const messages = await this.storage.list();
-          const archiveData = {
-            roomId: this.state.id.toString(),
-            timestamp: new Date().toISOString(),
-            messageCount: messages.size,
-            messages: Array.from(messages.entries()).map(([k, v]) => ({ key: k, value: v }))
-          };
-          
-          const archiveKey = `archive_${this.state.id.toString()}_${Date.now()}.json`;
-          await this.env.READTALK_R2.put(
-            archiveKey,
-            JSON.stringify(archiveData, null, 2)
-          );
-          
-          // Log archive to KV
-          await this.env.READTALK_KV.put(
-            `archive_log_${this.state.id.toString()}`,
-            JSON.stringify({
-              archiveKey,
-              timestamp: new Date().toISOString(),
-              messageCount: messages.size
-            })
-          );
-          
-          return new Response(JSON.stringify({
-            success: true,
-            archiveKey,
-            messageCount: messages.size
-          }), {
-            headers: { "Content-Type": "application/json" }
-          });
-        }
-
         default:
           return new Response("Not found", { status: 404 });
       }
@@ -533,7 +241,7 @@ export class ChatRoom {
       limiterId: limiterId.toString(), 
       limiter, 
       blockedMessages: [],
-      joinedAt: new Date().toISOString()
+      joinedAt: Date.now()
     };
     
     webSocket.serializeAttachment({ 
@@ -551,25 +259,13 @@ export class ChatRoom {
       }
     }
 
-    // Load message history from storage
+    // Load message history from DO storage
     let storage = await this.storage.list({ reverse: true, limit: 100 });
     let backlog = [...storage.values()];
     backlog.reverse();
     backlog.forEach(value => {
       session.blockedMessages.push(value);
     });
-    
-    // Log session start to KV
-    await this.env.READTALK_KV.put(
-      `session_${this.state.id.toString()}_${Date.now()}`,
-      JSON.stringify({
-        roomId: this.state.id.toString(),
-        ip,
-        timestamp: new Date().toISOString(),
-        action: "connected"
-      }),
-      { expirationTtl: 86400 }
-    );
   }
 
   async webSocketMessage(webSocket, msg) {
@@ -590,7 +286,7 @@ export class ChatRoom {
       let data = JSON.parse(msg);
 
       if (!session.name) {
-        // User is setting their name
+        // Set user name
         session.name = "" + (data.name || "anonymous");
         webSocket.serializeAttachment({ 
           ...webSocket.deserializeAttachment(), 
@@ -612,20 +308,6 @@ export class ChatRoom {
         // Broadcast join notification
         this.broadcast({ joined: session.name });
         
-        // Log user join to D1
-        try {
-          await this.env.READTALK_DB.prepare(
-            "INSERT INTO user_joins (room_id, username, ip, joined_at) VALUES (?, ?, ?, ?)"
-          ).bind(
-            this.state.id.toString(),
-            session.name,
-            session.ip,
-            Date.now()
-          ).run();
-        } catch (e) {
-          // Ignore if table doesn't exist
-        }
-
         webSocket.send(JSON.stringify({ ready: true }));
         return;
       }
@@ -633,8 +315,7 @@ export class ChatRoom {
       // Handle chat message
       data = { 
         name: session.name, 
-        message: "" + data.message,
-        roomId: this.state.id.toString()
+        message: "" + data.message
       };
 
       if (data.message.length > 256) {
@@ -646,31 +327,27 @@ export class ChatRoom {
       this.lastTimestamp = data.timestamp;
 
       let dataStr = JSON.stringify(data);
+      
+      // 1. Broadcast user
       this.broadcast(dataStr);
 
-      // Store in Durable Object storage
+      // 2. DO storage (history)
       let key = new Date(data.timestamp).toISOString();
       await this.storage.put(key, dataStr);
       
-      // Also store in KV for backup/analytics
-      await this.env.READTALK_KV.put(
-        `msg_${this.state.id.toString()}_${data.timestamp}`,
-        dataStr,
-        { expirationTtl: 604800 } // 7 days
-      );
-      
-      // Optional: Store message metadata in D1
-      try {
-        await this.env.READTALK_DB.prepare(
-          "INSERT INTO messages (room_id, username, message, timestamp) VALUES (?, ?, ?, ?)"
-        ).bind(
-          this.state.id.toString(),
-          session.name,
-          data.message,
-          data.timestamp
-        ).run();
-      } catch (e) {
-        // Table might not exist
+      // 3. LOGGER ENDPOINT BACKGROUND
+      if (this.env.READTALK_DB || this.env.READTALK_KV) {
+        this.state.waitUntil(
+          fetch(`https://${this.env.WORKER_HOST}/api/logs`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roomId: this.state.id.toString(),
+              type: 'message',
+              data
+            })
+          }).catch(() => {})
+        );
       }
       
     } catch (err) {
@@ -694,20 +371,6 @@ export class ChatRoom {
     
     if (session.name) {
       this.broadcast({ quit: session.name });
-      
-      // Log user leave to KV
-      await this.env.READTALK_KV.put(
-        `session_${this.state.id.toString()}_${Date.now()}_leave`,
-        JSON.stringify({
-          roomId: this.state.id.toString(),
-          username: session.name,
-          ip: session.ip,
-          timestamp: new Date().toISOString(),
-          action: "disconnected",
-          duration: Date.now() - new Date(session.joinedAt).getTime()
-        }),
-        { expirationTtl: 86400 }
-      );
     }
   }
 
@@ -739,57 +402,33 @@ export class ChatRoom {
   }
 }
 
-// ============ DURABLE OBJECT: RATE LIMITER ============
+// ============ RATE LIMITER ============
 export class RateLimiter {
   constructor(state, env) {
     this.state = state;
-    this.env = env;
     this.nextAllowedTime = 0;
     
-    // Load state from storage if exists
+    // Load state from storage
     this.state.blockConcurrencyWhile(async () => {
       let stored = await this.state.storage.get("nextAllowedTime");
-      if (stored) {
-        this.nextAllowedTime = parseFloat(stored);
-      }
+      if (stored) this.nextAllowedTime = parseFloat(stored);
     });
-    
-    console.log(`RateLimiter initialized: ${state.id.toString()}`);
   }
 
   async fetch(request) {
     return await handleErrors(request, async () => {
       let now = Date.now() / 1000;
-      let limiterId = this.state.id.toString();
-
-      // Load current state
+      
       await this.state.blockConcurrencyWhile(async () => {
         let stored = await this.state.storage.get("nextAllowedTime");
-        if (stored) {
-          this.nextAllowedTime = parseFloat(stored);
-        }
+        if (stored) this.nextAllowedTime = parseFloat(stored);
       });
 
       this.nextAllowedTime = Math.max(now, this.nextAllowedTime);
 
       if (request.method == "POST") {
-        // Apply rate limit
-        this.nextAllowedTime += 5; // 5 second penalty
-        
-        // Save state
+        this.nextAllowedTime += 5;
         await this.state.storage.put("nextAllowedTime", this.nextAllowedTime.toString());
-        
-        // Log rate limit event to KV
-        await this.env.READTALK_KV.put(
-          `ratelimit_${limiterId}_${Date.now()}`,
-          JSON.stringify({
-            limiterId,
-            timestamp: new Date().toISOString(),
-            nextAllowedTime: this.nextAllowedTime,
-            ip: request.headers.get("CF-Connecting-IP") || "unknown"
-          }),
-          { expirationTtl: 3600 } // 1 hour
-        );
       }
 
       let cooldown = Math.max(0, this.nextAllowedTime - now - 20);
@@ -808,9 +447,7 @@ class RateLimiterClient {
   }
 
   checkLimit() {
-    if (this.inCooldown) {
-      return false;
-    }
+    if (this.inCooldown) return false;
     this.inCooldown = true;
     this.callLimiter();
     return true;
@@ -828,7 +465,6 @@ class RateLimiterClient {
 
       let cooldown = +(await response.text());
       await new Promise(resolve => setTimeout(resolve, cooldown * 1000));
-
       this.inCooldown = false;
     } catch (err) {
       this.reportError(err);
