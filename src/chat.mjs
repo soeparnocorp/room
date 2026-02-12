@@ -101,13 +101,13 @@ async function handleApiRequest(path, request, env, ctx) {
       return roomObject.fetch(newUrl, request);
     }
     
-    // ============ ENDPOINT PISAH UNTUK LOGGING ============
+    // ============ ENDPOINT LOGGING ============
     case "logs": {
       if (request.method !== "POST") {
         return new Response("Method not allowed", { status: 405 });
       }
       
-      // Handle logging di endpoint terpisah
+      // Handle logging endpoint
       const { roomId, type, data } = await request.json();
       
       switch (type) {
