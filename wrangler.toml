@@ -15,22 +15,29 @@ binding = "READTALK_DB"
 database_name = "readtalk_db"
 database_id = "ff653b9c-4e2c-479d-8aa4-497da62de3c5"
 
-# R2 Bucket binding (DARI SCREENSHOT: READTALK_R2)
+# R2 Bucket binding
 [[r2_buckets]]
 binding = "READTALK_R2"
 bucket_name = "readtalk-r2"
 
-# Durable Object bindings
+# ============ DURABLE OBJECTS ============
 [durable_objects]
 bindings = [
-  { name = "rooms", class_name = "ChatRoom" },
-  { name = "limiters", class_name = "RateLimiter" }
+  { name = "users", class_name = "UserConnection" },      # BARU: 1 user = 1 DO
+  { name = "rooms", class_name = "ChatRoom" },            # SUDAH ADA: 1 room = 1 DO
+  { name = "limiters", class_name = "RateLimiter" }       # SUDAH ADA: rate limiter per IP
 ]
 
 # ============ MIGRATIONS ============
+# Migration untuk class baru (UserConnection)
+[[migrations]]
+tag = "v2"
+new_classes = ["UserConnection"]
+
+# Migration sebelumnya (tetap ada)
 [[migrations]]
 tag = "v1"
-new_classes = ["ChatRoom", "RateLimiter"]  # GANTI: new_sqlite_classes → new_classes
+new_classes = ["ChatRoom", "RateLimiter"]
 
 # ============ RULES ============
 [[rules]]
@@ -54,11 +61,12 @@ enabled = false
 persist = true
 head_sampling_rate = 1
 
-# ============ DEVELOPMENT (Optional) ============
+# ============ DEVELOPMENT ============
 [dev]
 ip = "localhost"
 port = 8787
 local_protocol = "http"
 
+# ============ BUILD ============
 [build]
-upload.format = "service-worker"  # atau "modules" tergantung setup
+upload.format = "modules"  # Karena pake import/export (ES modules)
