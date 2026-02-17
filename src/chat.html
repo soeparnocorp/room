@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>READTalk</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ===== AREA LOGIN (LINKTREE STYLE) ===== */
+    #name-form {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 100;
+    }
+
+    /* ===== HEADER 25% DENGAN GAMBAR ===== */
+    .profile-header {
+      width: 100%;
+      height: 25vh; /* 25% layar */
+      position: relative;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); /* default gradient */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      margin-bottom: 50px; /* ruang untuk avatar */
+    }
+
+    /* Overlay gelap biar avatar lebih keliatan */
+    .header-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.2);
+      z-index: 1;
+    }
+
+    /* Avatar di tengah header, setengah keluar */
+    .header-avatar {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    #avatar-preview {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      border: 4px solid white;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    #avatar-preview:hover {
+      transform: scale(1.02);
+    }
+    #avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    #avatar-placeholder {
+      font-size: 42px;
+      color: #aaa;
+      line-height: 1;
+    }
+    #avatar-upload {
+      display: none;
+    }
+
+    /* ===== KONTEN TENGAH (LINKTREE) ===== */
+    .linktree-content {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    /* Input username (your name) */
+    #name-input {
+      width: 100%;
+      padding: 16px 22px;
+      font-size: 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50px;
+      text-align: center;
+      background: #f8f9fa;
+      outline: none;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+    #name-input:focus {
+      border-color: #ff0000;
+      background: white;
+      box-shadow: 0 0 0 4px rgba(255,0,0,0.08);
+    }
+
+    /* Group room input + button */
+    .room-group {
+      display: flex;
+      width: 100%;
+      gap: 10px;
+    }
+
+    #room-name-input {
+      flex: 1;
+      padding: 16px 22px;
+      font-size: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50px;
+      text-align: center;
+      background: #f8f9fa;
+      outline: none;
+      transition: border 0.2s;
+    }
+    #room-name-input:focus {
+      border-color: #ff0000;
+    }
+
+    #go-public {
+      padding: 0 30px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 4px 10px rgba(255,0,0,0.3);
+    }
+    #go-public:hover {
+      background: #cc0000;
+      transform: scale(1.02);
+    }
+    #go-public:active {
+      transform: scale(0.98);
+    }
+
+    /* Footer */
+    .linktree-footer {
+      margin-top: auto;
+      padding: 25px 0;
+      color: #aaa;
+      font-size: 14px;
+      font-weight: 400;
+    }
+
+    /* ===== AREA CHAT (setelah login) ===== */
+    #chatroom {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #efeae2;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      display: none;
+      flex-direction: column;
+    }
+
+    /* Header chat */
+    .chat-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      background: #f0f2f5;
+      border-bottom: 1px solid #ddd;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .chat-avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #ff0000;
+    }
+    .name-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #display-name {
+      font-weight: 600;
+      font-size: 18px;
+      color: #111;
+    }
+    .edit-name-btn {
+      background: none;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      color: #ff0000;
+      padding: 4px 8px;
+      border-radius: 20px;
+    }
+    .edit-name-btn:hover {
+      background: rgba(255,0,0,0.1);
+    }
+    .room-info {
+      color: #555;
+      font-size: 14px;
+    }
+    .room-info span {
+      font-weight: 600;
+      color: #ff0000;
+    }
+
+    /* Chat log */
+    #chatlog {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Message bubbles */
+    .message {
+      max-width: 70%;
+      padding: 8px 12px;
+      border-radius: 16px;
+      line-height: 1.4;
+      word-wrap: break-word;
+      position: relative;
+    }
+    .message.own {
+      background: #ff0000;
+      color: white;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .message.other {
+      background: white;
+      color: #111;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+    .message-avatar {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+    .message-name {
+      font-weight: 600;
+    }
+    .message-time {
+      font-size: 10px;
+      color: #888;
+      margin-left: auto;
+    }
+
+    /* Input area chat */
+    .chat-input-container {
+      display: flex;
+      padding: 12px 20px;
+      background: #f0f2f5;
+      border-top: 1px solid #ddd;
+    }
+    #chat-input {
+      flex: 1;
+      border: none;
+      outline: none;
+      padding: 14px 18px;
+      border-radius: 30px;
+      background: white;
+      font-size: 15px;
+    }
+    #send-btn {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      border: none;
+      background: #ff0000;
+      color: white;
+      font-size: 20px;
+      cursor: pointer;
+      margin-left: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ===== MODAL EDIT NAME ===== */
+    #edit-name-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 350px;
+      padding: 25px;
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+    }
+    .modal-content h3 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #111;
+    }
+    #edit-name-input {
+      width: 100%;
+      padding: 14px 18px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 40px;
+      text-align: center;
+      margin-bottom: 20px;
+      outline: none;
+    }
+    #edit-name-input:focus {
+      border-color: #ff0000;
+    }
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+    .modal-actions button {
+      padding: 10px 24px;
+      border-radius: 40px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #cancel-edit {
+      background: #f0f2f5;
+      color: #333;
+    }
+    #save-edit {
+      background: #ff0000;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== FORM LOGIN (LINKTREE STYLE) ===== -->
+  <form id="name-form">
+    <!-- HEADER 25% DENGAN GAMBAR (bisa diganti nanti) -->
+    <div class="profile-header" id="profile-header" style="background-image: linear-gradient(145deg, #ff0000, #b30000);">
+      <div class="header-overlay"></div>
+      <div class="header-avatar">
+        <div id="avatar-preview" onclick="document.getElementById('avatar-upload').click()">
+          <img id="avatar-image" src="" alt="avatar">
+          <span id="avatar-placeholder">📸</span>
+        </div>
+        <input type="file" id="avatar-upload" accept="image/*">
+      </div>
+    </div>
+
+    <!-- KONTEN TENGAH -->
+    <div class="linktree-content">
+      <input type="text" id="name-input" placeholder="@username" maxlength="32" autocomplete="off">
+      <div class="room-group">
+        <input type="text" id="room-name-input" placeholder="room name" maxlength="32">
+        <button type="button" id="go-public">Go</button>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="linktree-footer">
+      © 2026 READTalk · Linktree Style
+    </div>
+  </form>
+
+  <!-- ===== CHAT ROOM ===== -->
+  <div id="chatroom">
+    <div class="chat-header">
+      <div class="user-info">
+        <img id="chat-avatar" class="chat-avatar" src="" alt="avatar">
+        <div class="name-display">
+          <span id="display-name"></span>
+          <button class="edit-name-btn" id="edit-name-btn">✏️</button>
+        </div>
+      </div>
+      <div class="room-info">
+        <span id="display-room"></span>
+      </div>
+    </div>
+    <div id="chatlog">
+      <div id="spacer"></div>
+    </div>
+    <div class="chat-input-container">
+      <input type="text" id="chat-input" placeholder="Type a message...">
+      <button id="send-btn">➤</button>
+    </div>
+  </div>
+
+  <!-- ===== MODAL EDIT NAME ===== -->
+  <div id="edit-name-modal">
+    <div class="modal-content">
+      <h3>Edit your name</h3>
+      <input type="text" id="edit-name-input" maxlength="32" placeholder="new name">
+      <div class="modal-actions">
+        <button id="cancel-edit">Cancel</button>
+        <button id="save-edit">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== GLOBAL =====
+    let currentWebSocket = null;
+    let username = '';
+    let roomname = '';
+    let avatarBase64 = localStorage.getItem('readtalk_avatar') || '';
+    let lastSeenTimestamp = 0;
+    let wroteWelcomeMessages = false;
+    let isAtBottom = true;
+
+    // DOM elements
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('name-input');
+    const roomNameInput = document.getElementById('room-name-input');
+    const goPublic = document.getElementById('go-public');
+    const chatroom = document.getElementById('chatroom');
+    const chatlog = document.getElementById('chatlog');
+    const chatInput = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const displayName = document.getElementById('display-name');
+    const displayRoom = document.getElementById('display-room');
+    const chatAvatar = document.getElementById('chat-avatar');
+    const editNameBtn = document.getElementById('edit-name-btn');
+    const editModal = document.getElementById('edit-name-modal');
+    const editInput = document.getElementById('edit-name-input');
+    const cancelEdit = document.getElementById('cancel-edit');
+    const saveEdit = document.getElementById('save-edit');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const avatarImage = document.getElementById('avatar-image');
+    const avatarPlaceholder = document.getElementById('avatar-placeholder');
+    const avatarUpload = document.getElementById('avatar-upload');
+
+    let hostname = window.location.host;
+    if (!hostname) hostname = 'localhost:8787';
+
+    // ===== LOAD SAVED DATA =====
+    const savedUsername = localStorage.getItem('readtalk_username');
+    if (savedUsername) nameInput.value = savedUsername;
+    if (avatarBase64) {
+      avatarImage.src = avatarBase64;
+      avatarImage.style.display = 'block';
+      avatarPlaceholder.style.display = 'none';
+    }
+
+    // ===== AVATAR UPLOAD =====
+    avatarUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          avatarBase64 = ev.target.result;
+          avatarImage.src = avatarBase64;
+          avatarImage.style.display = 'block';
+          avatarPlaceholder.style.display = 'none';
+          localStorage.setItem('readtalk_avatar', avatarBase64);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // ===== HASH HANDLING =====
+    if (window.location.hash.length > 1) {
+      roomname = window.location.hash.slice(1);
+      roomNameInput.value = roomname;
+      roomNameInput.disabled = true;
+    } else {
+      roomNameInput.disabled = false;
+    }
+
+    // ===== GO BUTTON =====
+    goPublic.addEventListener('click', () => {
+      username = nameInput.value.trim();
+      roomname = roomNameInput.value.trim() || window.location.hash.slice(1);
+
+      if (!username) { alert('Enter your name'); nameInput.focus(); return; }
+      if (!roomname) { alert('Enter room name'); roomNameInput.focus(); return; }
+
+      roomname = roomname.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+      if (roomname.length > 32) { alert('Max 32 chars'); return; }
+
+      localStorage.setItem('readtalk_username', username);
+      if (avatarBase64) localStorage.setItem('readtalk_avatar', avatarBase64);
+
+      window.location.hash = roomname;
+      startChat();
+    });
+
+    roomNameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); goPublic.click(); }
+    });
+
+    // ===== START CHAT =====
+    function startChat() {
+      nameForm.style.display = 'none';
+      chatroom.style.display = 'flex';
+      displayName.textContent = username;
+      displayRoom.textContent = roomname;
+      if (avatarBase64) chatAvatar.src = avatarBase64;
+
+      chatInput.focus();
+      join();
+    }
+
+    // ===== WEBSOCKET =====
+    function join() {
+      const wss = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
+      const ws = new WebSocket(`${wss}${hostname}/api/room/${roomname}/websocket`);
+      let rejoined = false;
+      let startTime = Date.now();
+
+      const rejoin = async () => {
+        if (!rejoined) {
+          rejoined = true;
+          currentWebSocket = null;
+          const timeSince = Date.now() - startTime;
+          if (timeSince < 10000) await new Promise(r => setTimeout(r, 10000 - timeSince));
+          join();
+        }
+      };
+
+      ws.addEventListener('open', () => {
+        currentWebSocket = ws;
+        ws.send(JSON.stringify({ name: username, avatar: avatarBase64 }));
+      });
+
+      ws.addEventListener('message', (event) => {
+        const data = JSON.parse(event.data);
+        if (data.error) addChatMessage(null, null, `* Error: ${data.error}`);
+        else if (data.joined) addSystemMessage(`${data.joined} joined`);
+        else if (data.quit) addSystemMessage(`${data.quit} left`);
+        else if (data.ready) {
+          if (!wroteWelcomeMessages) {
+            wroteWelcomeMessages = true;
+            addSystemMessage(`* Welcome to #${roomname}`);
+          }
+        } else if (data.name_changed) {
+          addSystemMessage(`${data.oldName} → ${data.newName}`);
+        } else {
+          if (data.timestamp > lastSeenTimestamp) {
+            addChatMessage(data.name, data.avatar, data.message);
+            lastSeenTimestamp = data.timestamp;
+          }
+        }
+      });
+
+      ws.addEventListener('close', rejoin);
+      ws.addEventListener('error', rejoin);
+    }
+
+    // ===== SEND MESSAGE =====
+    sendBtn.addEventListener('click', sendMessage);
+    chatInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+    });
+
+    function sendMessage() {
+      const text = chatInput.value.trim();
+      if (!text || !currentWebSocket) return;
+      currentWebSocket.send(JSON.stringify({ message: text }));
+      chatInput.value = '';
+      chatlog.scrollTop = chatlog.scrollHeight;
+    }
+
+    // ===== ADD MESSAGE =====
+    function addChatMessage(name, avatar, text) {
+      const msg = document.createElement('div');
+      msg.className = `message ${name === username ? 'own' : 'other'}`;
+
+      const header = document.createElement('div');
+      header.className = 'message-header';
+
+      if (name && name !== username) {
+        const img = document.createElement('img');
+        img.src = avatar || 'data:image/svg+xml,%3Csvg...%3E';
+        img.className = 'message-avatar';
+        header.appendChild(img);
+      }
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'message-name';
+      nameSpan.textContent = name || 'System';
+      header.appendChild(nameSpan);
+
+      const timeSpan = document.createElement('span');
+      timeSpan.className = 'message-time';
+      timeSpan.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      header.appendChild(timeSpan);
+
+      msg.appendChild(header);
+      const content = document.createElement('div');
+      content.textContent = text;
+      msg.appendChild(content);
+
+      chatlog.appendChild(msg);
+      chatlog.scrollTop = chatlog.scrollHeight;
+    }
+
+    function addSystemMessage(text) {
+      addChatMessage(null, null, `* ${text}`);
+    }
+
+    // ===== EDIT NAME MODAL =====
+    editNameBtn.addEventListener('click', () => {
+      editInput.value = username;
+      editModal.style.display = 'flex';
+    });
+
+    cancelEdit.addEventListener('click', () => {
+      editModal.style.display = 'none';
+    });
+
+    saveEdit.addEventListener('click', () => {
+      const newName = editInput.value.trim();
+      if (newName && newName !== username) {
+        username = newName;
+        displayName.textContent = newName;
+        localStorage.setItem('readtalk_username', newName);
+        if (currentWebSocket) {
+          currentWebSocket.send(JSON.stringify({ type: 'update_name', newName }));
+        }
+      }
+      editModal.style.display = 'none';
+    });
+
+    editModal.addEventListener('click', (e) => {
+      if (e.target === editModal) editModal.style.display = 'none';
+    });
+
+    // ===== AUTO RESTORE SESSION =====
+    (function init() {
+      const savedUser = localStorage.getItem('readtalk_username');
+      const roomHash = window.location.hash.slice(1);
+      if (savedUser && roomHash) {
+        username = savedUser;
+        roomname = roomHash;
+        avatarBase64 = localStorage.getItem('readtalk_avatar') || '';
+        nameInput.value = savedUser;
+        roomNameInput.value = roomHash;
+        roomNameInput.disabled = true;
+        startChat();
+      } else {
+        // normal flow
+      }
+    })();
+
+    // small polyfill for scroll
+    chatlog.addEventListener('scroll', () => {
+      isAtBottom = chatlog.scrollTop + chatlog.clientHeight >= chatlog.scrollHeight - 20;
+    });
+  </script>
+</body>
+</html>
