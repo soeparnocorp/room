@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>READTalk</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #f0f2f5;
+      height: 100vh;
+      overflow: hidden;
+      color: #111b21;
+    }
+
+    /* ===== LAYER SYSTEM ===== */
+    .layer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: white;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+      display: none;
+    }
+    .layer.active {
+      display: block;
+    }
+
+    /* ===== FORM LAYERS (1 & 2) ===== */
+    .form-layer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: #f0f2f5;
+      z-index: 100;
+    }
+
+    .form-input {
+      font-size: 24px;
+      padding: 16px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      width: 400px;
+      max-width: 90%;
+      margin-bottom: 20px;
+      background: white;
+      text-align: center;
+    }
+    .form-input:focus {
+      border-color: #ff0000;
+      outline: none;
+    }
+
+    .form-button {
+      font-size: 20px;
+      padding: 16px 32px;
+      margin: 10px;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .form-button.primary {
+      background: #ff0000;
+      color: white;
+      width: 180px;
+    }
+    .form-button:hover {
+      transform: translateY(-2px);
+    }
+
+    .form-text {
+      text-align: center;
+      color: #667781;
+      max-width: 600px;
+      line-height: 1.6;
+      font-size: 16px;
+    }
+    .form-text a {
+      color: #ff0000;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    /* ===== LAYER 3: CONVERSATION LIST ===== */
+    #layer3 {
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header dengan 3 titik */
+    .layer3-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: #ff0000;
+      color: white;
+    }
+    .layer3-header h1 {
+      font-size: 24px;
+      margin: 0;
+    }
+    .three-dots-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 28px;
+      cursor: pointer;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .three-dots-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* User info card */
+    .user-info-card {
+      padding: 16px 20px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .user-label {
+      font-size: 12px;
+      color: #667781;
+      margin-bottom: 4px;
+    }
+    .user-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    /* Online users section */
+    .online-section {
+      padding: 12px 20px;
+      background: #f0f2f5;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .online-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #667781;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    .online-user {
+      display: flex;
+      align-items: center;
+      padding: 8px 0;
+    }
+    .online-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #4caf50;
+      margin-right: 10px;
+    }
+    .online-user .away { background: #ff9800; }
+    .online-user .busy { background: #f44336; }
+
+    /* Rooms list */
+    .rooms-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .room-item {
+      padding: 16px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .room-item:hover {
+      background: #f5f5f5;
+    }
+    .room-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .room-meta {
+      font-size: 13px;
+      color: #667781;
+    }
+
+    /* Bottom nav (mobile) */
+    .bottom-nav {
+      display: flex;
+      justify-content: space-around;
+      padding: 8px 0 12px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+    }
+    .nav-item {
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 14px;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 30px;
+    }
+    .nav-item.active {
+      color: #ff0000;
+      background: #ffeeee;
+    }
+
+    /* Desktop tabs (hidden by default) */
+    .desktop-tabs {
+      display: none;
+    }
+
+    /* ===== LAYER 4: CHAT ROOM ===== */
+    #layer4 {
+      background-color: #efeae2;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+
+    .chat-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 30;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+    .chat-header .room-title {
+      flex: 1;
+      font-weight: 600;
+      font-size: 17px;
+    }
+
+    /* Online users sidebar (desktop) */
+    .online-sidebar {
+      display: none;
+    }
+
+    /* Chat area */
+    .chat-main {
+      position: absolute;
+      top: 60px;
+      bottom: 60px;
+      left: 0;
+      right: 0;
+    }
+    #chatlog {
+      height: calc(100% - 60px);
+      overflow-y: auto;
+      padding: 20px;
+    }
+    #chat-input {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      border: none;
+      padding: 0 20px 0 70px;
+      font-size: 16px;
+      background: #f0f2f5;
+      border-top: 1px solid #e0e0e0;
+    }
+    #chatroom::before {
+      content: ">";
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 70px;
+      height: 60px;
+      line-height: 60px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: #667781;
+      background: #f0f2f5;
+      border-top: 1px solid #e0e0e0;
+    }
+
+    /* Message bubbles */
+    #chatlog p {
+      max-width: 65%;
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 7.5px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    #chatlog p:has(> .username) {
+      background: #ff0000;
+      color: white;
+      margin-left: auto;
+      margin-right: 0;
+      border-top-right-radius: 0;
+    }
+    #chatlog p:not(:has(> .username)) {
+      background: white;
+      color: #111b21;
+      margin-right: auto;
+      margin-left: 0;
+      border-top-left-radius: 0;
+      box-shadow: 0 1px 0.5px rgba(0,0,0,0.05);
+    }
+    .username {
+      font-weight: 600;
+    }
+
+    /* ===== MODAL 4 LAYER (hari ini) ===== */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+      backdrop-filter: blur(5px);
+    }
+    .modal.hidden {
+      display: none;
+    }
+    .modal-content {
+      background: white;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 28px;
+      padding: 24px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal-content h3 {
+      font-size: 22px;
+      margin-bottom: 20px;
+      color: #111;
+      text-align: center;
+    }
+
+    .layer {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .layer:last-child {
+      border-bottom: none;
+    }
+    .layer label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #ff0000;
+    }
+
+    /* Avatar container */
+    .avatar-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    #modal-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #ff0000;
+    }
+    #change-avatar-btn {
+      background: #f0f0f0;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 40px;
+      cursor: pointer;
+    }
+
+    /* Text area style (hari ini) */
+    .wa-textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 20px;
+      font-size: 15px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+      transition: border 0.2s;
+    }
+    .wa-textarea:focus {
+      border-color: #ff0000;
+    }
+
+    .chat-button {
+      width: 100%;
+      padding: 16px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-weight: 700;
+      margin-top: 20px;
+      cursor: pointer;
+    }
+
+    .char-count {
+      display: block;
+      text-align: right;
+      font-size: 12px;
+      color: #999;
+      margin-top: 6px;
+    }
+
+    /* ===== DESKTOP STYLES ===== */
+    @media(min-width:901px) {
+      /* Bottom nav jadi sidebar */
+      .bottom-nav {
+        display: none;
+      }
+      
+      .desktop-tabs {
+        display: flex;
+        flex-direction: column;
+        width: 80px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+      }
+      
+      #layer3 {
+        flex-direction: row;
+      }
+      
+      .layer3-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      /* Online sidebar di layer 4 */
+      .online-sidebar {
+        display: block;
+        position: absolute;
+        left: 0;
+        top: 60px;
+        bottom: 0;
+        width: 250px;
+        background: white;
+        border-right: 1px solid #e0e0e0;
+        padding: 20px;
+        overflow-y: auto;
+      }
+      
+      .chat-main {
+        left: 250px;
+      }
+    }
+
+    /* Utility */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <!-- LAYER 1: FORM NAME -->
+  <div id="layer1" class="layer form-layer active">
+    <input id="name-input" class="form-input" placeholder="your name">
+    <p class="form-text">
+      This chat runs entirely on the edge<br>
+      <a href="https://blog.cloudflare.com/introducing-workers-durable-objects" target="_blank">Durable Objects</a>
+    </p>
+  </div>
+
+  <!-- LAYER 2: FORM ROOM -->
+  <div id="layer2" class="layer form-layer">
+    <p class="form-text">Public Room:</p>
+    <input id="room-name" class="form-input" placeholder="room name">
+    <button id="go-public" class="form-button primary">Go &raquo;</button>
+    <!-- Private room dihapus -->
+  </div>
+
+  <!-- LAYER 3: CONVERSATION LIST + ONLINE USERS -->
+  <div id="layer3" class="layer">
+    <!-- Desktop tabs -->
+    <div class="desktop-tabs">
+      <button class="nav-item active">💬</button>
+      <button class="nav-item">📰</button>
+      <button class="nav-item">👥</button>
+      <button class="nav-item">📞</button>
+    </div>
+    
+    <div class="layer3-content">
+      <!-- Header dengan 3 titik -->
+      <div class="layer3-header">
+        <h1>READTalk</h1>
+        <button class="three-dots-btn" id="threeDotsBtn">⋮</button>
+      </div>
+      
+      <!-- User info card -->
+      <div class="user-info-card">
+        <div class="user-label">You are</div>
+        <div id="display-username" class="user-value">(not set)</div>
+      </div>
+      
+      <!-- Online users section (LIVE) -->
+      <div class="online-section">
+        <div class="online-title">Online · <span id="online-count">0</span></div>
+        <div id="online-users-list"></div>
+      </div>
+      
+      <!-- Rooms list -->
+      <div class="rooms-section" id="rooms-container">
+        <div class="room-item" id="default-room-message" style="padding: 40px 20px; text-align: center; color: #667781;">
+          Create your first room to start chatting
+        </div>
+      </div>
+      
+      <!-- Bottom nav (mobile) -->
+      <div class="bottom-nav">
+        <button class="nav-item active" data-tab="chat">💬 Chat</button>
+        <button class="nav-item" data-tab="updates">📰 Updates</button>
+        <button class="nav-item" data-tab="communities">👥 Komunitas</button>
+        <button class="nav-item" data-tab="calls">📞 Panggilan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 4: CHAT ROOM -->
+  <div id="layer4" class="layer">
+    <div class="chat-header">
+      <button class="back-btn">←</button>
+      <div class="room-title" id="chat-room-title">Chat Room</div>
+      <button class="three-dots-btn" id="chatThreeDots">⋮</button>
+    </div>
+    
+    <!-- Online users sidebar (desktop) -->
+    <div class="online-sidebar" id="online-sidebar">
+      <div class="online-title">Online in room</div>
+      <div id="sidebar-online-list"></div>
+    </div>
+    
+    <!-- Chat main area -->
+    <div class="chat-main">
+      <div id="chatlog">
+        <div id="spacer"></div>
+      </div>
+      
+      <form id="chatroom" action="/fake-form-action">
+        <input id="chat-input" placeholder="Type a message...">
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 4 LAYER -->
+  <div class="modal hidden" id="profileModal">
+    <div class="modal-content">
+      <h3>Settings</h3>
+      
+      <!-- LAYER 1: Avatar -->
+      <div class="layer">
+        <label>Avatar</label>
+        <div class="avatar-container">
+          <img id="modal-avatar" src="" alt="avatar">
+          <button id="change-avatar-btn">Ganti Foto</button>
+        </div>
+        <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+      </div>
+      
+      <!-- LAYER 2: Name -->
+      <div class="layer">
+        <label>Your Name</label>
+        <input type="text" id="modal-name" maxlength="32" style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 30px;">
+        <span class="char-count" id="name-count">0/32</span>
+      </div>
+      
+      <!-- LAYER 3: Status -->
+      <div class="layer">
+        <label>Status</label>
+        <select id="modal-status" style="width: 100%; padding: 14px; border: 2px solid #e0e0e0; border-radius: 30px;">
+          <option value="online">🟢 Online</option>
+          <option value="away">🟡 Away</option>
+          <option value="busy">🔴 Busy</option>
+        </select>
+      </div>
+      
+      <!-- LAYER 4: About + Chat Button (dengan gaya text area hari ini) -->
+      <div class="layer">
+        <label>About</label>
+        <textarea id="modal-about" class="wa-textarea" rows="3" maxlength="150" placeholder="Tulis tentang kamu..."></textarea>
+        <span class="char-count" id="about-count">0/150</span>
+        
+        <button class="chat-button" id="start-chat-btn">
+          💬 Start Chat
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== GLOBAL STATE =====
+    let currentWebSocket = null;
+    let username = '';
+    let roomname = '';
+    let avatarBase64 = localStorage.getItem('readtalk_avatar') || '';
+    let onlineUsers = new Map(); // name -> status
+    let roomsHistory = [];
+    let lastSeenTimestamp = 0;
+    let wroteWelcomeMessages = false;
+    let isAtBottom = true;
+
+    // DOM Elements
+    const layer1 = document.getElementById('layer1');
+    const layer2 = document.getElementById('layer2');
+    const layer3 = document.getElementById('layer3');
+    const layer4 = document.getElementById('layer4');
+    
+    const nameInput = document.getElementById('name-input');
+    const roomNameInput = document.getElementById('room-name');
+    const goPublic = document.getElementById('go-public');
+    const displayUsername = document.getElementById('display-username');
+    const roomsContainer = document.getElementById('rooms-container');
+    const defaultRoomMessage = document.getElementById('default-room-message');
+    const onlineUsersList = document.getElementById('online-users-list');
+    const onlineCount = document.getElementById('online-count');
+    const sidebarOnlineList = document.getElementById('sidebar-online-list');
+    
+    const threeDotsBtn = document.getElementById('threeDotsBtn');
+    const chatThreeDots = document.getElementById('chatThreeDots');
+    const profileModal = document.getElementById('profileModal');
+    const modalName = document.getElementById('modal-name');
+    const modalStatus = document.getElementById('modal-status');
+    const modalAbout = document.getElementById('modal-about');
+    const modalAvatar = document.getElementById('modal-avatar');
+    const changeAvatarBtn = document.getElementById('change-avatar-btn');
+    const avatarUpload = document.getElementById('avatar-upload');
+    const startChatBtn = document.getElementById('start-chat-btn');
+    
+    const backBtn = document.querySelector('.back-btn');
+    const chatRoomTitle = document.getElementById('chat-room-title');
+    const chatlog = document.getElementById('chatlog');
+    const chatInput = document.getElementById('chat-input');
+    const chatroomForm = document.getElementById('chatroom');
+
+    let hostname = window.location.host || 'localhost:8787';
+
+    // ===== LOCAL STORAGE LOAD =====
+    const savedUsername = localStorage.getItem('readtalk_username');
+    if (savedUsername) {
+      username = savedUsername;
+      nameInput.value = savedUsername;
+      displayUsername.textContent = savedUsername;
+      modalName.value = savedUsername;
+    }
+    
+    if (avatarBase64) {
+      modalAvatar.src = avatarBase64;
+    }
+
+    // ===== LAYER NAVIGATION =====
+    function showLayer(layerNum) {
+      document.querySelectorAll('.layer').forEach(l => l.classList.remove('active'));
+      document.getElementById(`layer${layerNum}`).classList.add('active');
+    }
+
+    // ===== FORM FLOW =====
+    showLayer(1);
+
+    nameInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        username = nameInput.value.trim();
+        if (username) {
+          localStorage.setItem('readtalk_username', username);
+          displayUsername.textContent = username;
+          modalName.value = username;
+          showLayer(2);
+          roomNameInput.focus();
+        }
+      }
+    });
+
+    goPublic.addEventListener('click', () => {
+      roomname = roomNameInput.value.trim();
+      if (!roomname) return;
+      
+      roomname = roomname.replace(/[^a-zA-Z0-9_-]/g, '').toLowerCase();
+      window.location.hash = roomname;
+      
+      // Save to history
+      roomsHistory.unshift({ name: roomname, type: 'public' });
+      renderRoomsList();
+      
+      // Pindah ke layer 3
+      showLayer(3);
+      
+      // 🔥 WEBSOCKET DIMULAI DI LAYER 3 (koreksi)
+      startWebSocket();
+      
+      // Update online users list (sementara)
+      onlineUsers.set(username, 'online');
+      updateOnlineUsersList();
+    });
+
+    // ===== ROOMS LIST =====
+    function renderRoomsList() {
+      if (roomsHistory.length === 0) {
+        defaultRoomMessage.style.display = 'block';
+        return;
+      }
+      
+      defaultRoomMessage.style.display = 'none';
+      roomsContainer.innerHTML = '';
+      
+      roomsHistory.forEach(room => {
+        const div = document.createElement('div');
+        div.className = 'room-item';
+        div.dataset.room = room.name;
+        div.innerHTML = `
+          <div class="room-name">#${room.name}</div>
+          <div class="room-meta">Click to open</div>
+        `;
+        div.addEventListener('click', () => openChatRoom(room.name));
+        roomsContainer.appendChild(div);
+      });
+    }
+
+    // ===== OPEN CHAT ROOM (LAYER 4) =====
+    function openChatRoom(room) {
+      roomname = room;
+      chatRoomTitle.textContent = `#${room}`;
+      
+      // Clear chatlog
+      while (chatlog.firstChild) chatlog.removeChild(chatlog.firstChild);
+      chatlog.appendChild(document.createElement('div')).id = 'spacer';
+      
+      showLayer(4);
+      
+      // Reconnect WebSocket ke room ini
+      if (currentWebSocket) currentWebSocket.close();
+      startWebSocket();
+      
+      chatInput.focus();
+    }
+
+    // ===== WEBSOCKET (dimulai di layer 3) =====
+    function startWebSocket() {
+      if (!username || !roomname) return;
+      
+      const wss = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
+      const ws = new WebSocket(`${wss}${hostname}/api/room/${roomname}/websocket`);
+      
+      ws.addEventListener('open', () => {
+        currentWebSocket = ws;
+        ws.send(JSON.stringify({ name: username, avatar: avatarBase64 }));
+      });
+      
+      ws.addEventListener('message', (e) => {
+        const data = JSON.parse(e.data);
+        
+        if (data.error) {
+          addChatMessage(null, `* Error: ${data.error}`);
+        }
+        else if (data.joined) {
+          onlineUsers.set(data.joined, 'online');
+          updateOnlineUsersList();
+          addChatMessage(null, `* ${data.joined} joined`);
+        }
+        else if (data.quit) {
+          onlineUsers.delete(data.quit);
+          updateOnlineUsersList();
+          addChatMessage(null, `* ${data.quit} left`);
+        }
+        else if (data.ready) {
+          if (!wroteWelcomeMessages) {
+            wroteWelcomeMessages = true;
+            addChatMessage(null, `* Welcome to #${roomname}`);
+          }
+        }
+        else if (data.name) {
+          // Regular chat message
+          addChatMessage(data.name, data.message);
+        }
+      });
+      
+      ws.addEventListener('close', () => {
+        setTimeout(startWebSocket, 3000);
+      });
+    }
+
+    // ===== ONLINE USERS LIST UPDATE =====
+    function updateOnlineUsersList() {
+      // Update di layer 3
+      onlineUsersList.innerHTML = '';
+      onlineUsers.forEach((status, name) => {
+        const div = document.createElement('div');
+        div.className = 'online-user';
+        div.innerHTML = `
+          <span class="online-indicator ${status}"></span>
+          <span>${name}${name === username ? ' (kamu)' : ''}</span>
+        `;
+        onlineUsersList.appendChild(div);
+      });
+      onlineCount.textContent = onlineUsers.size;
+      
+      // Update di sidebar layer 4
+      sidebarOnlineList.innerHTML = '';
+      onlineUsers.forEach((status, name) => {
+        const div = document.createElement('div');
+        div.className = 'online-user';
+        div.innerHTML = `<span class="online-indicator ${status}"></span> ${name}`;
+        sidebarOnlineList.appendChild(div);
+      });
+    }
+
+    // ===== ADD CHAT MESSAGE =====
+    function addChatMessage(name, text) {
+      const p = document.createElement('p');
+      if (name) {
+        const span = document.createElement('span');
+        span.className = 'username';
+        span.textContent = `${name}: `;
+        p.appendChild(span);
+      }
+      p.appendChild(document.createTextNode(text));
+      chatlog.appendChild(p);
+      
+      if (isAtBottom) {
+        chatlog.scrollTop = chatlog.scrollHeight;
+      }
+    }
+
+    // ===== SEND MESSAGE =====
+    chatroomForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (text && currentWebSocket) {
+        currentWebSocket.send(JSON.stringify({ message: text }));
+        chatInput.value = '';
+      }
+    });
+
+    // ===== BACK BUTTON =====
+    backBtn.addEventListener('click', () => {
+      showLayer(3);
+    });
+
+    // ===== 3 TITIK MENU =====
+    threeDotsBtn.addEventListener('click', () => {
+      profileModal.classList.remove('hidden');
+    });
+    
+    chatThreeDots.addEventListener('click', () => {
+      profileModal.classList.remove('hidden');
+    });
+
+    // ===== CLOSE MODAL =====
+    profileModal.addEventListener('click', (e) => {
+      if (e.target === profileModal) {
+        profileModal.classList.add('hidden');
+      }
+    });
+
+    // ===== AVATAR UPLOAD =====
+    changeAvatarBtn.addEventListener('click', () => {
+      avatarUpload.click();
+    });
+    
+    avatarUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          avatarBase64 = ev.target.result;
+          modalAvatar.src = avatarBase64;
+          localStorage.setItem('readtalk_avatar', avatarBase64);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // ===== SAVE PROFILE =====
+    document.getElementById('save-profile')?.addEventListener('click', () => {
+      // Bisa ditambah nanti
+      profileModal.classList.add('hidden');
+    });
+
+    // ===== HASH HANDLING =====
+    if (window.location.hash.length > 1) {
+      roomname = window.location.hash.slice(1);
+      roomNameInput.value = roomname;
+      
+      // Auto restore session
+      const savedUser = localStorage.getItem('readtalk_username');
+      if (savedUser) {
+        username = savedUser;
+        displayUsername.textContent = savedUser;
+        modalName.value = savedUser;
+        
+        roomsHistory.unshift({ name: roomname, type: 'public' });
+        renderRoomsList();
+        showLayer(3);
+        startWebSocket();
+      }
+    }
+
+    // ===== BOTTOM NAV =====
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        // Handle tab change
+      });
+    });
+
+    // ===== AUTO SCROLL =====
+    chatlog.addEventListener('scroll', () => {
+      isAtBottom = chatlog.scrollTop + chatlog.clientHeight >= chatlog.scrollHeight - 20;
+    });
+  </script>
+</body>
+</html>
