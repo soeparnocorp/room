@@ -1,0 +1,65 @@
+name = "room"
+compatibility_date = "2024-01-01"
+main = "src/chat.mjs"
+
+# ============ BINDINGS ============
+
+# KV Namespace binding
+kv_namespaces = [
+  { binding = "READTALK_KV", id = "13a468e30cc84fe58ff6297d799050f2" }
+]
+
+# D1 Database binding
+[[d1_databases]]
+binding = "READTALK_DB"
+database_name = "readtalk_db"
+database_id = "ff653b9c-4e2c-479d-8aa4-497da62de3c5"
+
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "READTALK_R2"
+bucket_name = "readtalk-r2"
+
+# Durable Object bindings
+[durable_objects]
+bindings = [
+  { name = "rooms", class_name = "ChatRoom" },
+  { name = "limiters", class_name = "RateLimiter" }
+]
+
+# ============ MIGRATIONS ============
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom", "RateLimiter"]
+
+# ============ RULES ============
+[[rules]]
+type = "Data"
+globs = ["**/*.html"]
+fallthrough = false
+
+# ============ OBSERVABILITY ============
+[observability]
+enabled = true
+head_sampling_rate = 1
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = false
+persist = true
+head_sampling_rate = 1
+
+# ============ BUILD (PAKAI MODULES) ============
+[build]
+upload.format = "modules"  # UBAH dari service-worker ke modules
+
+# ============ DEVELOPMENT ============
+[dev]
+ip = "localhost"
+port = 8787
+local_protocol = "http"
