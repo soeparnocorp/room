@@ -1,6 +1,3 @@
-// This is the Edge Chat Demo Worker, built using Durable Objects!
-// BINDINGS: READTALK_KV, READTALK_DB, READTALK_R2
-
 import HTML from "./index.html";
 
 async function handleErrors(request, func) {
