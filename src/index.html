@@ -445,7 +445,7 @@
     </form>
   </div>
 
-  <!-- MODAL SETTINGS -->
+  <!-- SETTINGS -->
   <div id="settingsModal" class="modal hidden">
     <div class="modal-content">
       <h3>Settings</h3>
@@ -461,7 +461,7 @@
   </div>
 
   <script>
-    // ===== 🔥 HANDLE CODE DARI OPENAUTH =====
+    // ===== HANDLE CODE OPENAUTH =====
     const urlParams = new URLSearchParams(window.location.search);
     const oauthCode = urlParams.get('code');
 
@@ -547,7 +547,7 @@
         displayUsername.textContent = newName;
         nameInput.value = newName;
         
-        // Update WebSocket kalo lagi connected
+        // Update WebSocket connected
         if (currentWebSocket) {
           currentWebSocket.send(JSON.stringify({ 
             type: 'update_name', 
