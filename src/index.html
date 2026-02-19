@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f0f2f5; color: #111b21;
+    }
+
+    /* ===== LAYER SYSTEM ===== */
+    .layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: white;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+      display: none;
+    }
+    .layer.active {
+      display: block;
+    }
+
+    /* ===== LAYER 1: CREATE PUBLIC ROOM ===== */
+    #layer1 {
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .create-room-box {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      text-align: center;
+    }
+    .room-input-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    #public-room-input {
+      flex: 1;
+      padding: 16px 22px;
+      font-size: 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 50px;
+      text-align: center;
+      background: white;
+      outline: none;
+    }
+    #public-room-input:focus {
+      border-color: #ff0000;
+    }
+    #go-public {
+      padding: 0 30px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* ===== LAYER 2: YOUR NAME + AVATAR ===== */
+    #layer2 {
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .profile-header {
+      width: 100%;
+      height: 25vh;
+      position: relative;
+      background: linear-gradient(145deg, #ff0000, #b30000);
+      margin-bottom: 40px;
+    }
+    .avatar-container {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #avatar-preview {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: #f0f0f0;
+      border: 4px solid white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+    #avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: none;
+    }
+    #avatar-placeholder {
+      font-size: 42px;
+      color: #aaa;
+    }
+    #name-display {
+      font-size: 24px;
+      font-weight: 600;
+      margin-top: 60px;
+      text-align: center;
+    }
+
+    /* ===== LAYER 3: RESENDLIST (USER LIST) ===== */
+    #layer3 {
+      background: white;
+      display: flex;
+      flex-direction: column;
+    }
+    .layer3-header {
+      padding: 16px;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .layer3-header h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .menu-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .user-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .user-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+    }
+    .user-item:hover {
+      background: #f5f5f5;
+    }
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    .user-info {
+      flex: 1;
+    }
+    .user-name {
+      font-weight: 600;
+    }
+    .user-status {
+      font-size: 12px;
+      color: #4caf50;
+    }
+
+    /* User Modal (Layer 3 popup) */
+    .user-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 16px;
+      padding: 20px;
+      width: 280px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      z-index: 200;
+      display: none;
+    }
+    .user-modal.show {
+      display: block;
+    }
+    .user-modal-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      display: block;
+    }
+    .user-modal-name {
+      text-align: center;
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    .user-modal-about {
+      text-align: center;
+      color: #666;
+      margin-bottom: 5px;
+    }
+    .user-modal-status {
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .chat-btn {
+      width: 100%;
+      padding: 12px;
+      background: #ff0000;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ===== LAYER 4: PRIVATE ROOM (CHAT) ===== */
+    #layer4 {
+      background-color: #efeae2;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60'...%3E");
+      display: none;
+    }
+    .chat-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+    #layer4-chatlog {
+      position: absolute;
+      top: 60px;
+      bottom: 60px;
+      left: 0; right: 0;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    #layer4-input {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      border: none;
+      padding: 0 20px;
+      font-size: 16px;
+    }
+
+    /* ===== LAYER 5: SETTINGS ===== */
+    #layer5 {
+      background: white;
+      display: none;
+    }
+    .settings-container {
+      padding: 20px;
+    }
+    .settings-item {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+    }
+    .settings-item:hover {
+      background: #f5f5f5;
+    }
+
+    /* ===== LAYER 6-9: BOTTOM NAV (KOSONG) ===== */
+    #layer6, #layer7, #layer8, #layer9 {
+      background: white;
+      display: none;
+    }
+    .placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: #888;
+    }
+
+    /* ===== BOTTOM NAVIGATION ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: white;
+      border-top: 1px solid #ddd;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      padding: 12px 0;
+      background: none;
+      border: none;
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      text-align: center;
+    }
+    .nav-item.active {
+      color: #ff0000;
+    }
+
+    /* ===== DESKTOP ===== */
+    @media(min-width:901px) {
+      .bottom-nav {
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 80px;
+        flex-direction: column;
+        border-right: 1px solid #ddd;
+        border-top: none;
+      }
+      .nav-item {
+        padding: 20px 0;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+      }
+      .layer {
+        margin-left: 80px;
+        width: calc(100% - 80px);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- LAYER 1: CREATE PUBLIC ROOM -->
+  <div id="layer1" class="layer active">
+    <div class="create-room-box">
+      <h2>READTalk</h2>
+      <div class="room-input-group">
+        <input type="text" id="public-room-input" placeholder="#createroom">
+        <button id="go-public" class="primary">GO</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 2: YOUR NAME + AVATAR -->
+  <div id="layer2" class="layer">
+    <div class="profile-header">
+      <div class="avatar-container">
+        <div id="avatar-preview" onclick="document.getElementById('avatar-upload').click()">
+          <img id="avatar-image" src="" alt="avatar">
+          <span id="avatar-placeholder">📸</span>
+        </div>
+        <input type="file" id="avatar-upload" accept="image/*" style="display: none;">
+      </div>
+    </div>
+    <div id="name-display"></div>
+    <button id="save-profile" style="margin-top: 20px; padding: 12px 30px; background: #ff0000; color: white; border: none; border-radius: 50px;">Save</button>
+  </div>
+
+  <!-- LAYER 3: RESENDLIST (USER LIST) -->
+  <div id="layer3" class="layer">
+    <div class="layer3-header">
+      <h2>READTalk</h2>
+      <button class="menu-btn" id="menuBtn">⋮</button>
+    </div>
+    <div class="user-list" id="user-list">
+      <!-- Users will appear here -->
+    </div>
+  </div>
+
+  <!-- User Modal (Layer 3 popup) -->
+  <div id="userModal" class="user-modal">
+    <img id="modal-user-avatar" class="user-modal-avatar" src="">
+    <div id="modal-user-name" class="user-modal-name"></div>
+    <div id="modal-user-about" class="user-modal-about"></div>
+    <div id="modal-user-status" class="user-modal-status"></div>
+    <button id="modal-chat-btn" class="chat-btn">💬 Start Chat</button>
+  </div>
+
+  <!-- LAYER 4: PRIVATE ROOM (CHAT) -->
+  <div id="layer4" class="layer">
+    <div class="chat-header">
+      <button class="back-btn" id="backFromPrivate">←</button>
+      <div id="private-room-title">Private Chat</div>
+    </div>
+    <div id="layer4-chatlog"></div>
+    <input type="text" id="layer4-input" placeholder="Type a message...">
+  </div>
+
+  <!-- LAYER 5: SETTINGS -->
+  <div id="layer5" class="layer">
+    <div class="layer3-header">
+      <h2>Settings</h2>
+      <button class="menu-btn" id="closeSettings">✕</button>
+    </div>
+    <div class="settings-container">
+      <div class="settings-item" id="editName">✏️ Edit Your Name</div>
+      <div class="settings-item" id="editAvatar">📸 Edit Avatar</div>
+      <div class="settings-item" id="editAbout">📝 Edit About</div>
+      <div class="settings-item" id="toggleTheme">🌙 Day/Night Mode</div>
+      <div class="settings-item" id="logoutBtn">🚪 Logout</div>
+    </div>
+  </div>
+
+  <!-- LAYER 6-9: BOTTOM NAV PLACEHOLDERS -->
+  <div id="layer6" class="layer">
+    <div class="placeholder">
+      <h2>💬 Chat</h2>
+      <p>Fitur akan segera hadir</p>
+    </div>
+  </div>
+  <div id="layer7" class="layer">
+    <div class="placeholder">
+      <h2>📰 Stories</h2>
+      <p>Fitur akan segera hadir</p>
+    </div>
+  </div>
+  <div id="layer8" class="layer">
+    <div class="placeholder">
+      <h2>👥 Community</h2>
+      <p>Fitur akan segera hadir</p>
+    </div>
+  </div>
+  <div id="layer9" class="layer">
+    <div class="placeholder">
+      <h2>📞 Calls</h2>
+      <p>Fitur akan segera hadir</p>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
+  <div class="bottom-nav">
+    <button class="nav-item" data-layer="6">💬 Chat</button>
+    <button class="nav-item" data-layer="7">📰 Stories</button>
+    <button class="nav-item" data-layer="8">👥 Community</button>
+    <button class="nav-item" data-layer="9">📞 Calls</button>
+  </div>
+
+  <script>
+    // ===== OPENAUTH CODE HANDLER =====
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthCode = urlParams.get('code');
+    if (oauthCode) {
+      localStorage.setItem('readtalk_code', oauthCode);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // ===== GLOBAL STATE =====
+    let currentUser = {
+      name: localStorage.getItem('readtalk_username') || 'Guest',
+      avatar: localStorage.getItem('readtalk_avatar') || '',
+      about: localStorage.getItem('readtalk_about') || 'Hello!',
+      status: 'online'
+    };
+    let currentRoom = null;
+    let ws = null;
+    let onlineUsers = new Map();
+
+    // ===== LAYER MANAGEMENT =====
+    function showLayer(layerNum) {
+      document.querySelectorAll('.layer').forEach(l => l.classList.remove('active'));
+      document.getElementById(`layer${layerNum}`).classList.add('active');
+    }
+
+    // ===== LAYER 2: YOUR NAME + AVATAR =====
+    document.getElementById('name-display').textContent = currentUser.name;
+    if (currentUser.avatar) {
+      document.getElementById('avatar-image').src = currentUser.avatar;
+      document.getElementById('avatar-image').style.display = 'block';
+      document.getElementById('avatar-placeholder').style.display = 'none';
+    }
+
+    document.getElementById('avatar-upload').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          currentUser.avatar = ev.target.result;
+          document.getElementById('avatar-image').src = currentUser.avatar;
+          document.getElementById('avatar-image').style.display = 'block';
+          document.getElementById('avatar-placeholder').style.display = 'none';
+          localStorage.setItem('readtalk_avatar', currentUser.avatar);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('save-profile').addEventListener('click', () => {
+      localStorage.setItem('readtalk_username', currentUser.name);
+      showLayer(1);
+    });
+
+    // ===== LAYER 1: CREATE PUBLIC ROOM =====
+    document.getElementById('go-public').addEventListener('click', () => {
+      const room = document.getElementById('public-room-input').value.trim();
+      if (room) {
+        currentRoom = room;
+        window.location.hash = `#${room}`;
+        showLayer(3);
+        connectWebSocket(room);
+      }
+    });
+
+    // ===== WEBSOCKET =====
+    function connectWebSocket(room) {
+      const wss = location.protocol === 'http:' ? 'ws://' : 'wss://';
+      const host = window.location.host || 'account.soeparnocorp.workers.dev';
+      ws = new WebSocket(`${wss}${host}/api/room/${room}/websocket`);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ 
+          name: currentUser.name,
+          avatar: currentUser.avatar,
+          about: currentUser.about
+        }));
+      };
+
+      ws.onmessage = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.joined) {
+          onlineUsers.set(data.joined, { name: data.joined, status: 'online' });
+          renderUserList();
+        } else if (data.quit) {
+          onlineUsers.delete(data.quit);
+          renderUserList();
+        }
+      };
+    }
+
+    // ===== RENDER USER LIST (LAYER 3) =====
+    function renderUserList() {
+      const list = document.getElementById('user-list');
+      list.innerHTML = '';
+      onlineUsers.forEach((user, name) => {
+        const div = document.createElement('div');
+        div.className = 'user-item';
+        div.dataset.user = name;
+        div.innerHTML = `
+          <img class="user-avatar" src="${user.avatar || ''}" onerror="this.src='data:image/svg+xml,%3Csvg...%3E'">
+          <div class="user-info">
+            <div class="user-name">${name}</div>
+            <div class="user-status">🟢 Online</div>
+          </div>
+        `;
+        div.addEventListener('click', () => showUserModal(name));
+        list.appendChild(div);
+      });
+    }
+
+    // ===== USER MODAL (LAYER 3 POPUP) =====
+    function showUserModal(username) {
+      const user = onlineUsers.get(username) || { name: username };
+      document.getElementById('modal-user-name').textContent = user.name;
+      document.getElementById('modal-user-about').textContent = user.about || 'No about';
+      document.getElementById('modal-user-status').textContent = '🟢 Online';
+      document.getElementById('userModal').classList.add('show');
+    }
+
+    document.getElementById('modal-chat-btn').addEventListener('click', () => {
+      const targetUser = document.getElementById('modal-user-name').textContent;
+      const privateRoom = `#${currentUser.name}_${targetUser}`;
+      document.getElementById('userModal').classList.remove('show');
+      showLayer(4);
+      document.getElementById('private-room-title').textContent = privateRoom;
+      // Connect to private room WebSocket
+    });
+
+    // ===== LAYER 5: SETTINGS =====
+    document.getElementById('menuBtn').addEventListener('click', () => {
+      showLayer(5);
+    });
+
+    document.getElementById('closeSettings').addEventListener('click', () => {
+      showLayer(3);
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      localStorage.clear();
+      location.reload();
+    });
+
+    // ===== BOTTOM NAV (LAYER 6-9) =====
+    document.querySelectorAll('.nav-item').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const layer = btn.dataset.layer;
+        showLayer(layer);
+        document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    // ===== BACK BUTTON =====
+    document.getElementById('backFromPrivate').addEventListener('click', () => {
+      showLayer(3);
+    });
+
+    // ===== INIT =====
+    (function init() {
+      if (localStorage.getItem('readtalk_username')) {
+        showLayer(1);
+      } else {
+        showLayer(2);
+      }
+      
+      if (location.hash.length > 1) {
+        currentRoom = location.hash.slice(1);
+        document.getElementById('public-room-input').value = currentRoom;
+        showLayer(3);
+        connectWebSocket(currentRoom);
+      }
+    })();
+  </script>
+</body>
+</html>
