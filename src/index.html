@@ -1,0 +1,1324 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f0f2f5; color: #111b21;
+    }
+
+    /* ===== LAYER SYSTEM ===== */
+    .app-layer {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: white;
+      overflow: hidden;
+      transition: transform 0.3s ease;
+    }
+
+    /* Layer 1: Conversation List (sekarang jadi Layer 3) */
+    #conversation-list {
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Layer 2: Chat Room */
+    #chat-room {
+      z-index: 20;
+      background-color: #efeae2;
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%23000000' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+      display: none;
+    }
+
+    /* ===== NEW: AVATAR SECTION (LAYER 1) ===== */
+    .avatar-section {
+      padding: 20px 16px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #e0e0e0;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .avatar-preview {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: bold;
+      overflow: hidden;
+    }
+    .avatar-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .avatar-details {
+      flex: 1;
+    }
+    .avatar-label {
+      font-size: 12px;
+      color: #667781;
+      margin-bottom: 4px;
+    }
+    #display-username {
+      font-size: 18px;
+      font-weight: 600;
+      color: #111b21;
+      margin-bottom: 4px;
+    }
+    #avatar-upload {
+      display: none;
+    }
+    .avatar-upload-btn {
+      background: #e4e6eb;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* ===== NEW: CREATE ROOM SECTION (LAYER 2) ===== */
+    .create-room-section {
+      padding: 16px;
+      background: white;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    .room-input-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    #public-room-input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 24px;
+      font-size: 14px;
+    }
+    #public-room-input:focus {
+      border-color: #ff0000;
+      outline: none;
+    }
+    .room-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .room-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 24px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .room-btn.public {
+      background: #ff0000;
+      color: white;
+    }
+    .room-btn.private {
+      background: #e4e6eb;
+      color: #111b21;
+    }
+
+    /* ===== EXISTING: ROOMS SECTION (LAYER 3) ===== */
+    .rooms-section {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0;
+    }
+    .room-item {
+      padding: 16px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .room-item:hover {
+      background: #f5f5f5;
+    }
+    .room-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+    .room-info {
+      flex: 1;
+    }
+    .room-name {
+      font-weight: 600;
+      color: #111b21;
+      margin-bottom: 4px;
+    }
+    .room-meta {
+      font-size: 13px;
+      color: #667781;
+    }
+
+    /* ===== BOTTOM NAVIGATION (LAYER 6-9) - MOBILE ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: white;
+      border-top: 1px solid #e0e0e0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 100;
+    }
+    .nav-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      cursor: pointer;
+      color: #667781;
+    }
+    .nav-item.active {
+      color: #ff0000;
+    }
+
+    /* ===== SIDEBAR NAVIGATION (DESKTOP) ===== */
+    .sidebar-nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 80px;
+      height: 100%;
+      background: white;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 20px;
+      z-index: 200;
+    }
+    .sidebar-nav .nav-item {
+      width: 100%;
+      padding: 16px 0;
+    }
+
+    /* ===== FLOATING USER CARD (dari klik avatar di Layer 3) ===== */
+    .floating-card {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      padding: 24px;
+      z-index: 1000;
+      min-width: 280px;
+      text-align: center;
+    }
+    .floating-card.hidden {
+      display: none;
+    }
+    .card-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: #ff0000;
+      margin: 0 auto 16px;
+      overflow: hidden;
+    }
+    .card-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .card-name {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .card-about {
+      color: #667781;
+      margin-bottom: 16px;
+    }
+    .card-status {
+      font-size: 14px;
+      color: #00a884;
+      margin-bottom: 16px;
+    }
+    .card-chat-btn {
+      background: #ff0000;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    /* ===== EXISTING STYLES (dibiarkan utuh) ===== */
+    .list-header {
+      padding: 12px 16px;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .list-header h1 {
+      margin: 0;
+      font-size: 20px;
+    }
+    .menu-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .menu-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+    .menu-dropdown {
+      position: fixed;
+      top: 60px;
+      right: 16px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      width: 200px;
+      z-index: 1000;
+      display: none;
+    }
+    .menu-dropdown.show {
+      display: block;
+    }
+    .menu-item {
+      padding: 14px 20px;
+      cursor: pointer;
+      transition: background 0.2s;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .menu-item:last-child {
+      border-bottom: none;
+    }
+    .menu-item:hover {
+      background: #f5f5f5;
+    }
+    .chat-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 60px;
+      background: #ff0000;
+      color: white;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      z-index: 30;
+    }
+    .back-btn {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 24px;
+      cursor: pointer;
+      margin-right: 12px;
+    }
+    .room-title {
+      flex: 1;
+      font-weight: 600;
+      font-size: 17px;
+    }
+    #chatlog {
+      position: absolute;
+      top: 60px;
+      bottom: 60px;
+      left: 0; right: 0;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    #spacer { height: 20px; }
+    #chat-input {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 60px;
+      border: none;
+      padding: 0 20px 0 70px;
+      font-size: 16px;
+      background: #f0f2f5;
+      border-top: 1px solid #e0e0e0;
+    }
+    #chatroom::before {
+      content: ">";
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 70px; height: 60px;
+      line-height: 60px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      color: #667781;
+      background: #f0f2f5;
+      border-top: 1px solid #e0e0e0;
+    }
+    #chatlog p {
+      max-width: 65%;
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 7.5px;
+      line-height: 1.4;
+      word-wrap: break-word;
+    }
+    #chatlog p:has(> .username) {
+      background: #ff0000;
+      color: white;
+      margin-left: auto;
+      margin-right: 0;
+      border-top-right-radius: 0;
+    }
+    #chatlog p:not(:has(> .username)) {
+      background: white;
+      color: #111b21;
+      margin-right: auto;
+      margin-left: 0;
+      border-top-left-radius: 0;
+      box-shadow: 0 1px 0.5px rgba(0,0,0,0.05);
+    }
+    .username {
+      font-weight: 600;
+      color: #111b21;
+    }
+
+    /* ===== MODAL SETTINGS DIPERLUAS (LAYER 5) ===== */
+    .modal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal.hidden {
+      display: none;
+    }
+    .modal-content.settings-full {
+      background: white;
+      width: 90%;
+      max-width: 400px;
+      border-radius: 16px;
+      padding: 24px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .settings-section {
+      margin-bottom: 20px;
+    }
+    .settings-section label {
+      display: block;
+      font-size: 14px;
+      color: #667781;
+      margin-bottom: 6px;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    .modal-input:focus {
+      border-color: #ff0000;
+      outline: none;
+    }
+    .avatar-edit {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    #settingsAvatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #ff0000;
+    }
+    .settings-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      min-width: 100px;
+    }
+    .modal-btn.primary {
+      background: #ff0000;
+      color: white;
+    }
+    .modal-btn.secondary {
+      background: #f0f2f5;
+      color: #111b21;
+    }
+    .modal-btn.danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    .mobile-only {
+      display: flex;
+    }
+    .desktop-only {
+      display: none;
+    }
+
+    @media(min-width:901px) {
+      #conversation-list {
+        width: 300px;
+        border-right: 1px solid #e0e0e0;
+        display: flex !important;
+      }
+      #chat-room {
+        left: 300px;
+        width: calc(100% - 300px);
+        display: block !important;
+      }
+      .back-btn {
+        display: none !important;
+      }
+      #chat-input {
+        left: 0;
+        width: 100%;
+      }
+      .mobile-only {
+        display: none;
+      }
+      .desktop-only {
+        display: flex;
+      }
+      /* Desktop: conversation list digeser kasih space untuk sidebar */
+      #conversation-list {
+        left: 80px;
+        width: calc(300px - 80px);
+      }
+      #chat-room {
+        left: calc(300px);
+        width: calc(100% - 300px);
+      }
+    }
+
+    @media(max-width:900px) {
+      .sidebar-nav {
+        display: none;
+      }
+    }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cccccc; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #b3b3b3; }
+  </style>
+</head>
+
+<body>
+  <!-- FORM 1: Input Name (tetap ada untuk awal masuk) -->
+  <form id="name-form" class="form-layer">
+    <input id="name-input" class="form-input" placeholder="your name">
+    <p class="form-text">
+      This chat runs entirely on the edge<br>
+      <a href="https://blog.cloudflare.com/introducing-workers-durable-objects" target="_blank">Durable Objects</a>
+    </p>
+  </form>
+
+  <!-- FORM 2: Create Room (tetap ada untuk awal masuk) -->
+  <form id="room-form" class="form-layer" style="display: none;">
+    <p class="form-text">Public Room:</p>
+    <input id="room-name" class="form-input" placeholder="room name">
+    <button id="go-public" class="form-button primary">Go &raquo;</button>
+    <p class="form-text">OR</p>
+    <button id="go-private" class="form-button secondary">Private Room &raquo;</button>
+  </form>
+
+  <!-- SIDEBAR NAVIGATION (DESKTOP) - LAYER 6-9 -->
+  <div class="sidebar-nav desktop-only">
+    <div class="nav-item" data-layer="6">💬</div>
+    <div class="nav-item" data-layer="7">📱</div>
+    <div class="nav-item" data-layer="8">👥</div>
+    <div class="nav-item" data-layer="9">📞</div>
+  </div>
+
+  <!-- LAYER 3 (dulunya Layer 1): Conversation List + Avatar + Create Room -->
+  <div id="conversation-list" class="app-layer" style="display: none;">
+    <div class="list-header">
+      <h1>READTalk</h1>
+      <button class="menu-btn" id="menuBtn">⋮</button>
+    </div>
+    
+    <!-- Menu Dropdown -->
+    <div class="menu-dropdown" id="menuDropdown">
+      <div class="menu-item" id="settingsBtn">⚙️ Settings</div>
+      <div class="menu-item" id="logoutBtn">🚪 Logout</div>
+    </div>
+    
+    <!-- LAYER 1: Your Name + Avatar Upload -->
+    <div class="avatar-section">
+      <div class="avatar-preview" id="avatarPreview">
+        <span id="avatarInitial">?</span>
+      </div>
+      <div class="avatar-details">
+        <div class="avatar-label">You are</div>
+        <div id="display-username" class="name-value">(not set)</div>
+        <input type="file" id="avatar-upload" accept="image/*">
+        <button class="avatar-upload-btn" id="avatarUploadBtn">Change photo</button>
+      </div>
+    </div>
+
+    <!-- LAYER 2: Create Public Room -->
+    <div class="create-room-section">
+      <div class="room-input-group">
+        <input type="text" id="public-room-input" placeholder="Room name" maxlength="32">
+      </div>
+      <div class="room-actions">
+        <button class="room-btn public" id="createPublicBtn">Public Room</button>
+        <button class="room-btn private" id="createPrivateBtn">Private Room</button>
+      </div>
+    </div>
+    
+    <!-- LAYER 3: Resend List (rooms + users) -->
+    <div class="rooms-section" id="rooms-container">
+      <div class="room-item" id="default-room-message" style="padding: 40px 20px; text-align: center; color: #667781;">
+        Create your first room to start chatting
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 4: Chat Room -->
+  <div id="chat-room" class="app-layer">
+    <div class="chat-header">
+      <button class="back-btn">←</button>
+      <div id="chat-room-title" class="room-title">Chat Room</div>
+    </div>
+    
+    <div id="chatlog">
+      <div id="spacer"></div>
+    </div>
+    
+    <form id="chatroom" action="/fake-form-action">
+      <input id="chat-input" placeholder="Type a message...">
+    </form>
+  </div>
+
+  <!-- FLOATING CARD (layer kecil saat klik avatar di Layer 3) -->
+  <div id="floatingUserCard" class="floating-card hidden">
+    <div class="card-avatar" id="cardAvatar"></div>
+    <div class="card-name" id="cardName"></div>
+    <div class="card-about" id="cardAbout"></div>
+    <div class="card-status" id="cardStatus">● Online</div>
+    <button class="card-chat-btn" id="cardChatBtn">Chat</button>
+  </div>
+
+  <!-- LAYER 5: SETTINGS (diperluas) -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-content settings-full">
+      <h3>Settings</h3>
+      
+      <div class="settings-section">
+        <label>Your Name</label>
+        <input type="text" id="settingsName" class="modal-input" maxlength="32">
+      </div>
+      
+      <div class="settings-section">
+        <label>Avatar</label>
+        <div class="avatar-edit">
+          <img id="settingsAvatar" class="avatar-preview" src="">
+          <input type="file" id="settingsAvatarUpload" accept="image/*">
+          <button class="modal-btn secondary" id="uploadAvatarBtn">Upload</button>
+        </div>
+      </div>
+      
+      <div class="settings-section">
+        <label>About</label>
+        <textarea id="settingsAbout" class="modal-input" rows="2" maxlength="100" placeholder="Write something about yourself..."></textarea>
+      </div>
+      
+      <div class="settings-section">
+        <label>Theme</label>
+        <button class="modal-btn secondary" id="darkModeToggle">🌙 Dark Mode</button>
+      </div>
+      
+      <div class="settings-section">
+        <label>OpenAuth Code</label>
+        <input type="text" id="settingsCode" class="modal-input" readonly placeholder="(from login)">
+      </div>
+      
+      <div class="settings-actions">
+        <button class="modal-btn secondary" id="closeSettings">Cancel</button>
+        <button class="modal-btn primary" id="saveSettings">Save</button>
+        <button class="modal-btn danger" id="logoutBtnSettings">Logout</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION (MOBILE) - LAYER 6-9 -->
+  <div class="bottom-nav mobile-only">
+    <div class="nav-item" data-layer="6">💬 Chat</div>
+    <div class="nav-item" data-layer="7">📱 Stories</div>
+    <div class="nav-item" data-layer="8">👥 Community</div>
+    <div class="nav-item" data-layer="9">📞 Calls</div>
+  </div>
+
+  <script>
+    // ===== HANDLE CODE OPENAUTH =====
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthCode = urlParams.get('code');
+
+    if (oauthCode) {
+      localStorage.setItem('readtalk_code', oauthCode);
+      window.history.replaceState({}, document.title, window.location.pathname);
+      console.log('OAuth code saved:', oauthCode);
+    }
+
+    // ===== GLOBAL STATE =====
+    let currentWebSocket = null;
+    let username = localStorage.getItem('readtalk_username') || '';
+    let avatarUrl = localStorage.getItem('readtalk_avatar') || '';
+    let aboutText = localStorage.getItem('readtalk_about') || '';
+    let roomname = '';
+    let currentActiveRoom = null;
+    let roomsHistory = JSON.parse(localStorage.getItem('readtalk_rooms') || '[]');
+    
+    let hostname = window.location.host;
+    if (hostname === '') {
+      hostname = 'account.soeparnocorp.workers.dev';
+    }
+
+    // ===== DOM ELEMENTS =====
+    const nameForm = document.getElementById('name-form');
+    const nameInput = document.getElementById('name-input');
+    const roomForm = document.getElementById('room-form');
+    const roomNameInput = document.getElementById('room-name');
+    const goPublicButton = document.getElementById('go-public');
+    const goPrivateButton = document.getElementById('go-private');
+    const conversationList = document.getElementById('conversation-list');
+    const chatRoom = document.getElementById('chat-room');
+    const chatlog = document.getElementById('chatlog');
+    const chatInput = document.getElementById('chat-input');
+    const backBtn = document.querySelector('.back-btn');
+    const chatRoomTitle = document.getElementById('chat-room-title');
+    const displayUsername = document.getElementById('display-username');
+    const roomsContainer = document.getElementById('rooms-container');
+    const defaultRoomMessage = document.getElementById('default-room-message');
+    
+    // Avatar elements
+    const avatarPreview = document.getElementById('avatarPreview');
+    const avatarInitial = document.getElementById('avatarInitial');
+    const avatarUpload = document.getElementById('avatar-upload');
+    const avatarUploadBtn = document.getElementById('avatarUploadBtn');
+    
+    // Create room elements
+    const publicRoomInput = document.getElementById('public-room-input');
+    const createPublicBtn = document.getElementById('createPublicBtn');
+    const createPrivateBtn = document.getElementById('createPrivateBtn');
+    
+    // Menu elements
+    const menuBtn = document.getElementById('menuBtn');
+    const menuDropdown = document.getElementById('menuDropdown');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    
+    // Settings modal
+    const settingsModal = document.getElementById('settingsModal');
+    const settingsName = document.getElementById('settingsName');
+    const settingsCode = document.getElementById('settingsCode');
+    const settingsAbout = document.getElementById('settingsAbout');
+    const settingsAvatar = document.getElementById('settingsAvatar');
+    const settingsAvatarUpload = document.getElementById('settingsAvatarUpload');
+    const uploadAvatarBtn = document.getElementById('uploadAvatarBtn');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const closeSettings = document.getElementById('closeSettings');
+    const saveSettings = document.getElementById('saveSettings');
+    const logoutBtnSettings = document.getElementById('logoutBtnSettings');
+    
+    // Floating card
+    const floatingCard = document.getElementById('floatingUserCard');
+    const cardAvatar = document.getElementById('cardAvatar');
+    const cardName = document.getElementById('cardName');
+    const cardAbout = document.getElementById('cardAbout');
+    const cardStatus = document.getElementById('cardStatus');
+    const cardChatBtn = document.getElementById('cardChatBtn');
+    
+    // Bottom nav
+    const navItems = document.querySelectorAll('.nav-item');
+
+    let isAtBottom = true;
+    let lastSeenTimestamp = 0;
+    let wroteWelcomeMessages = false;
+    let onlineUsers = new Set();
+
+    // ===== AVATAR HANDLING =====
+    function updateAvatarUI(url) {
+      if (url && url.startsWith('data:image')) {
+        avatarPreview.innerHTML = `<img src="${url}" alt="avatar">`;
+        settingsAvatar.src = url;
+        avatarInitial.style.display = 'none';
+      } else {
+        avatarPreview.innerHTML = '<span id="avatarInitial">' + (username.charAt(0).toUpperCase() || '?') + '</span>';
+        settingsAvatar.src = '';
+      }
+    }
+
+    avatarUploadBtn.addEventListener('click', () => {
+      avatarUpload.click();
+    });
+
+    avatarUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          avatarUrl = e.target.result;
+          localStorage.setItem('readtalk_avatar', avatarUrl);
+          updateAvatarUI(avatarUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    uploadAvatarBtn.addEventListener('click', () => {
+      settingsAvatarUpload.click();
+    });
+
+    settingsAvatarUpload.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          avatarUrl = e.target.result;
+          localStorage.setItem('readtalk_avatar', avatarUrl);
+          updateAvatarUI(avatarUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // ===== CREATE ROOM HANDLERS (LAYER 2) =====
+    createPublicBtn.addEventListener('click', () => {
+      const room = publicRoomInput.value.trim();
+      if (room) {
+        if (room.length > 32) {
+          alert('Room name too long (max 32 chars)');
+          return;
+        }
+        saveRoomToHistory(room, false);
+        openChatRoom(room);
+        publicRoomInput.value = '';
+      }
+    });
+
+    createPrivateBtn.addEventListener('click', async () => {
+      createPrivateBtn.disabled = true;
+      createPrivateBtn.textContent = 'Creating...';
+
+      try {
+        const response = await fetch(`https://${hostname}/api/room`, {
+          method: 'POST'
+        });
+        
+        if (!response.ok) throw new Error('Failed to create private room');
+        
+        roomname = await response.text();
+        saveRoomToHistory(roomname, true);
+        openChatRoom(roomname);
+      } catch (error) {
+        alert('Something went wrong');
+        document.location.reload();
+      } finally {
+        createPrivateBtn.disabled = false;
+        createPrivateBtn.textContent = 'Private Room';
+      }
+    });
+
+    // ===== MENU DROPDOWN =====
+    menuBtn.addEventListener('click', () => {
+      menuDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!menuBtn.contains(event.target) && !menuDropdown.contains(event.target)) {
+        menuDropdown.classList.remove('show');
+      }
+    });
+
+    // Settings
+    settingsBtn.addEventListener('click', () => {
+      menuDropdown.classList.remove('show');
+      settingsName.value = username;
+      settingsAbout.value = aboutText;
+      settingsCode.value = localStorage.getItem('readtalk_code') || '(none)';
+      settingsAvatar.src = avatarUrl || '';
+      settingsModal.classList.remove('hidden');
+    });
+
+    closeSettings.addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    saveSettings.addEventListener('click', () => {
+      const newName = settingsName.value.trim();
+      const newAbout = settingsAbout.value.trim();
+      
+      if (newName && newName !== username) {
+        username = newName;
+        localStorage.setItem('readtalk_username', newName);
+        displayUsername.textContent = newName;
+        nameInput.value = newName;
+        updateAvatarUI(avatarUrl);
+        
+        if (currentWebSocket) {
+          currentWebSocket.send(JSON.stringify({ 
+            type: 'update_name', 
+            newName 
+          }));
+        }
+      }
+      
+      if (newAbout !== aboutText) {
+        aboutText = newAbout;
+        localStorage.setItem('readtalk_about', newAbout);
+      }
+      
+      settingsModal.classList.add('hidden');
+    });
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('readtalk_username');
+      localStorage.removeItem('readtalk_rooms');
+      localStorage.removeItem('readtalk_code');
+      localStorage.removeItem('readtalk_avatar');
+      localStorage.removeItem('readtalk_about');
+      window.location.reload();
+    }
+
+    logoutBtn.addEventListener('click', logout);
+    logoutBtnSettings.addEventListener('click', logout);
+
+    // Dark mode toggle (placeholder)
+    darkModeToggle.addEventListener('click', () => {
+      alert('Dark mode coming soon!');
+    });
+
+    // ===== ROOM HISTORY MANAGEMENT =====
+    function saveRoomToHistory(roomName, isPrivate = false) {
+      roomsHistory = roomsHistory.filter(r => r.name !== roomName);
+      roomsHistory.unshift({
+        name: roomName,
+        type: isPrivate ? 'private' : 'public',
+        timestamp: Date.now()
+      });
+      localStorage.setItem('readtalk_rooms', JSON.stringify(roomsHistory));
+      renderRoomsList();
+    }
+
+    function renderRoomsList() {
+      if (roomsHistory.length === 0) {
+        defaultRoomMessage.style.display = 'block';
+        return;
+      }
+      
+      defaultRoomMessage.style.display = 'none';
+      roomsContainer.innerHTML = '';
+      
+      roomsHistory.forEach(room => {
+        const roomItem = document.createElement('div');
+        roomItem.className = 'room-item';
+        roomItem.dataset.room = room.name;
+        roomItem.dataset.type = room.type;
+        
+        const roomAvatar = document.createElement('div');
+        roomAvatar.className = 'room-avatar';
+        roomAvatar.textContent = room.type === 'private' ? '🔒' : '#';
+        
+        const roomInfo = document.createElement('div');
+        roomInfo.className = 'room-info';
+        
+        const roomName = document.createElement('div');
+        roomName.className = 'room-name';
+        roomName.textContent = room.type === 'private' 
+          ? `Private ${room.name.substring(0, 8)}...` 
+          : `#${room.name}`;
+        
+        const roomMeta = document.createElement('div');
+        roomMeta.className = 'room-meta';
+        roomMeta.textContent = room.type === 'private' 
+          ? 'Private room • Click to open' 
+          : 'Public room • Click to open';
+        
+        roomInfo.appendChild(roomName);
+        roomInfo.appendChild(roomMeta);
+        
+        roomItem.appendChild(roomAvatar);
+        roomItem.appendChild(roomInfo);
+        
+        roomItem.addEventListener('click', (e) => {
+          // Jika klik di avatar, tampilkan floating card
+          if (e.target.closest('.room-avatar')) {
+            showUserCard(room.name);
+          } else {
+            openChatRoom(room.name);
+          }
+        });
+        
+        roomsContainer.appendChild(roomItem);
+      });
+    }
+
+    // ===== FLOATING CARD (Layer kecil saat klik avatar) =====
+    function showUserCard(userName) {
+      cardName.textContent = userName;
+      cardAbout.textContent = aboutText || 'No about yet';
+      cardAvatar.innerHTML = `<img src="${avatarUrl || ''}" alt="${userName}">`;
+      cardStatus.textContent = onlineUsers.has(userName) ? '● Online' : '○ Offline';
+      
+      cardChatBtn.onclick = () => {
+        // Buka private room dengan user ini (nanti diimplementasi)
+        floatingCard.classList.add('hidden');
+        alert('Private chat with ' + userName + ' - coming soon!');
+      };
+      
+      floatingCard.classList.remove('hidden');
+      
+      // Klik di luar untuk tutup
+      setTimeout(() => {
+        document.addEventListener('click', function closeCard(e) {
+          if (!floatingCard.contains(e.target)) {
+            floatingCard.classList.add('hidden');
+            document.removeEventListener('click', closeCard);
+          }
+        });
+      }, 100);
+    }
+
+    // ===== LAYER NAVIGATION =====
+    function showConversationList() {
+      nameForm.style.display = 'none';
+      roomForm.style.display = 'none';
+      conversationList.style.display = 'flex';
+      chatRoom.style.display = 'none';
+      
+      if (username) {
+        displayUsername.textContent = username;
+        updateAvatarUI(avatarUrl);
+      }
+    }
+
+    function openChatRoom(roomName) {
+      currentActiveRoom = roomName;
+      
+      conversationList.style.display = 'none';
+      chatRoom.style.display = 'block';
+      chatRoomTitle.textContent = roomName.length === 64 
+        ? `🔒 ${roomName.substring(0, 8)}...`
+        : `#${roomName}`;
+      
+      while (chatlog.firstChild) {
+        chatlog.removeChild(chatlog.firstChild);
+      }
+      chatlog.appendChild(document.createElement('div')).id = 'spacer';
+      
+      roomname = roomName;
+      document.location.hash = `#${roomName}`;
+      wroteWelcomeMessages = false;
+      onlineUsers.clear();
+      
+      if (currentWebSocket) {
+        currentWebSocket.close();
+      }
+      join();
+      
+      setTimeout(() => chatInput.focus(), 100);
+    }
+
+    // ===== FORM FLOW (EXISTING, TIDAK DIUBAH) =====
+    function startNameChooser() {
+      if (username) {
+        nameInput.value = username;
+        startRoomChooser();
+        return;
+      }
+      
+      nameForm.style.display = 'flex';
+      
+      nameForm.addEventListener('submit', event => {
+        event.preventDefault();
+        username = nameInput.value.trim();
+        if (username.length > 0) {
+          localStorage.setItem('readtalk_username', username);
+          displayUsername.textContent = username;
+          updateAvatarUI(avatarUrl);
+          startRoomChooser();
+        }
+      });
+
+      nameInput.addEventListener('input', event => {
+        if (event.currentTarget.value.length > 32) {
+          event.currentTarget.value = event.currentTarget.value.slice(0, 32);
+        }
+      });
+
+      nameInput.focus();
+    }
+
+    function startRoomChooser() {
+      nameForm.style.display = 'none';
+      roomForm.style.display = 'flex';
+
+      if (document.location.hash.length > 1) {
+        roomname = document.location.hash.slice(1);
+        const isPrivate = roomname.match(/^[0-9a-f]{64}$/);
+        saveRoomToHistory(roomname, isPrivate);
+        showConversationList();
+        return;
+      }
+
+      roomForm.addEventListener('submit', event => {
+        event.preventDefault();
+        roomname = roomNameInput.value.trim();
+        if (roomname.length > 0) {
+          saveRoomToHistory(roomname, false);
+          showConversationList();
+        }
+      });
+
+      roomNameInput.addEventListener('input', event => {
+        if (event.currentTarget.value.length > 32) {
+          event.currentTarget.value = event.currentTarget.value.slice(0, 32);
+        }
+      });
+
+      goPublicButton.addEventListener('click', () => {
+        roomname = roomNameInput.value.trim();
+        if (roomname.length > 0) {
+          saveRoomToHistory(roomname, false);
+          showConversationList();
+        }
+      });
+
+      goPrivateButton.addEventListener('click', async () => {
+        roomNameInput.disabled = true;
+        goPublicButton.disabled = true;
+        goPrivateButton.disabled = true;
+
+        try {
+          const response = await fetch(`https://${hostname}/api/room`, {
+            method: 'POST'
+          });
+          
+          if (!response.ok) throw new Error('Failed to create private room');
+          
+          roomname = await response.text();
+          saveRoomToHistory(roomname, true);
+          showConversationList();
+        } catch (error) {
+          alert('Something went wrong');
+          document.location.reload();
+        }
+      });
+
+      roomNameInput.focus();
+    }
+
+    // ===== CHAT FUNCTIONALITY (EXISTING, TIDAK DIUBAH) =====
+    function setupChatListeners() {
+      chatInput.addEventListener('keydown', event => {
+        if (event.keyCode === 38) chatlog.scrollBy(0, -50);
+        else if (event.keyCode === 40) chatlog.scrollBy(0, 50);
+        else if (event.keyCode === 33) chatlog.scrollBy(0, -chatlog.clientHeight + 50);
+        else if (event.keyCode === 34) chatlog.scrollBy(0, chatlog.clientHeight - 50);
+      });
+
+      document.getElementById('chatroom').addEventListener('submit', event => {
+        event.preventDefault();
+        if (currentWebSocket && chatInput.value.trim()) {
+          currentWebSocket.send(JSON.stringify({ message: chatInput.value }));
+          chatInput.value = '';
+          chatlog.scrollBy(0, 1e8);
+        }
+      });
+
+      chatInput.addEventListener('input', event => {
+        if (event.currentTarget.value.length > 256) {
+          event.currentTarget.value = event.currentTarget.value.slice(0, 256);
+        }
+      });
+
+      chatlog.addEventListener('scroll', () => {
+        isAtBottom = chatlog.scrollTop + chatlog.clientHeight >= chatlog.scrollHeight;
+      });
+
+      backBtn.addEventListener('click', () => {
+        if (currentWebSocket) {
+          currentWebSocket.close();
+          currentWebSocket = null;
+        }
+        showConversationList();
+      });
+
+      document.body.addEventListener('click', event => {
+        if (window.getSelection().toString() === '' && chatRoom.style.display === 'block') {
+          chatInput.focus();
+        }
+      });
+
+      if ('visualViewport' in window) {
+        window.visualViewport.addEventListener('resize', () => {
+          if (isAtBottom) chatlog.scrollBy(0, 1e8);
+        });
+      }
+    }
+
+    // ===== WEBSOCKET HANDLING (EXISTING, TIDAK DIUBAH) =====
+    function join() {
+      const wss = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
+      const ws = new WebSocket(`${wss}${hostname}/api/room/${roomname}/websocket`);
+      let rejoined = false;
+      let startTime = Date.now();
+
+      const rejoin = async () => {
+        if (!rejoined) {
+          rejoined = true;
+          currentWebSocket = null;
+
+          const timeSinceLastJoin = Date.now() - startTime;
+          if (timeSinceLastJoin < 10000) {
+            await new Promise(resolve => setTimeout(resolve, 10000 - timeSinceLastJoin));
+          }
+
+          join();
+        }
+      };
+
+      ws.addEventListener('open', () => {
+        currentWebSocket = ws;
+        ws.send(JSON.stringify({ name: username }));
+      });
+
+      ws.addEventListener('message', event => {
+        const data = JSON.parse(event.data);
+
+        if (data.error) {
+          addChatMessage(null, `* Error: ${data.error}`);
+        }
+        else if (data.joined) {
+          onlineUsers.add(data.joined);
+          addChatMessage(null, `* ${data.joined} joined the room`);
+        }
+        else if (data.quit) {
+          onlineUsers.delete(data.quit);
+          addChatMessage(null, `* ${data.quit} left the room`);
+        }
+        else if (data.ready) {
+          if (!wroteWelcomeMessages) {
+            wroteWelcomeMessages = true;
+            addChatMessage(null, '* © 2026 SOEPARNO ENTERPRISE Corp. All Rights Reserved.');
+            addChatMessage(null, '* Source: https://github.com/soeparnocorp/room');
+            addChatMessage(null, '* WARNING: Participants are random people on the internet. Names are not authenticated. Chat history is saved.');
+            if (roomname.length === 64) {
+              addChatMessage(null, '* This is a private room. Share the URL to invite others.');
+            } else {
+              addChatMessage(null, `* Welcome to #${roomname}. Say hi!`);
+            }
+            
+            if (onlineUsers.size > 0) {
+              addChatMessage(null, `* Online: ${Array.from(onlineUsers).join(', ')}`);
+            }
+          }
+        } 
+        else {
+          if (data.timestamp > lastSeenTimestamp) {
+            addChatMessage(data.name, data.message);
+            lastSeenTimestamp = data.timestamp;
+          }
+        }
+      });
+
+      ws.addEventListener('close', rejoin);
+      ws.addEventListener('error', rejoin);
+    }
+
+    function addChatMessage(name, text) {
+      const p = document.createElement('p');
+      if (name) {
+        const tag = document.createElement('span');
+        tag.className = 'username';
+        tag.textContent = `${name}: `;
+        p.appendChild(tag);
+      }
+      p.appendChild(document.createTextNode(text));
+
+      chatlog.appendChild(p);
+      if (isAtBottom) {
+        chatlog.scrollTop = chatlog.scrollHeight;
+      }
+    }
+
+    // ===== BOTTOM NAVIGATION HANDLERS (LAYER 6-9) =====
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const layer = item.dataset.layer;
+        // Kosong dulu, hanya tampilkan alert
+        alert(`Layer ${layer} (${item.textContent.trim()}) - Coming soon!`);
+      });
+    });
+
+    // ===== INITIALIZATION =====
+    function init() {
+      renderRoomsList();
+      updateAvatarUI(avatarUrl);
+      
+      if (document.location.hash.length > 1 && !currentActiveRoom) {
+        const roomFromHash = document.location.hash.slice(1);
+        const isPrivate = roomFromHash.match(/^[0-9a-f]{64}$/);
+        
+        const existing = roomsHistory.find(r => r.name === roomFromHash);
+        if (!existing) {
+          saveRoomToHistory(roomFromHash, isPrivate);
+        }
+      }
+      
+      startNameChooser();
+      setupChatListeners();
+    }
+
+    init();
+  </script>
+</body>
+</html>
