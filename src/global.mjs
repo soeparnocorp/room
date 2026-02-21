@@ -1,3 +1,4 @@
+// global.mjs //
 import HTML from "./index.html";
 
 async function handleErrors(request, func) {
