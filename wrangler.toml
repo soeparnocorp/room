@@ -23,8 +23,8 @@ bucket_name = "readtalk-r2"
 # SERVICE BINDING OPENAUTH
 [[services]]
 binding = "OPENAUTH"
-service = "openauth"  # Nama worker OpenAuth loe
-environment = "production"  # (opsional, kalo ada multiple env)
+service = "openauth"
+environment = "production"
 
 # Durable Object bindings
 [durable_objects]
@@ -69,3 +69,7 @@ upload.format = "modules"
 ip = "localhost"
 port = 8787
 local_protocol = "http"
+
+# ============ VARIABELS ============
+[vars]
+ACCOUNT_APP_ID = "f2f8c6d8f31d7b0a1adf2bf76cd5b45b"
