@@ -2,8 +2,12 @@ name = "account"
 compatibility_date = "2024-01-01"
 main = "src/global.mjs"
 
-# ============ BINDINGS ============
+# ============ VARIABLES ============
+[vars]
+GIT_REPO_KEY = "soeparnocorp/index"
+GIT_TOKEN_KEY = "main"
 
+# ============ BINDINGS ============
 # KV Namespace binding
 kv_namespaces = [
   { binding = "READTALK_KV", id = "13a468e30cc84fe58ff6297d799050f2" }
