@@ -5,7 +5,6 @@ main = "src/global.mjs"
 # ============ VARIABLES ============
 [vars]
 GIT_REPO_KEY = "soeparnocorp/index"
-GIT_TOKEN_KEY = "main"
 
 # ============ BINDINGS ============
 # KV Namespace binding
