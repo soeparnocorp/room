@@ -23,8 +23,8 @@ bucket_name = "readtalk-r2"
 # SERVICE BINDING OPENAUTH
 [[services]]
 binding = "OPENAUTH"
-service = "openauth"  # Nama worker OpenAuth loe
-environment = "production"  # (opsional, kalo ada multiple env)
+service = "openauth"
+environment = "production"
 
 # Durable Object bindings
 [durable_objects]
@@ -48,21 +48,6 @@ fallthrough = false
 [observability]
 enabled = true
 head_sampling_rate = 1
-
-[observability.logs]
-enabled = true
-head_sampling_rate = 1
-persist = true
-invocation_logs = true
-
-[observability.traces]
-enabled = false
-persist = true
-head_sampling_rate = 1
-
-# ============ BUILD ============
-[build]
-upload.format = "modules"
 
 # ============ DEVELOPMENT ============
 [dev]
