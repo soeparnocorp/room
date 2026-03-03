@@ -23,12 +23,6 @@ database_id = "ff653b9c-4e2c-479d-8aa4-497da62de3c5"
 binding = "READTALK_R2"
 bucket_name = "readtalk-r2"
 
-# SERVICE BINDING OPENAUTH
-[[services]]
-binding = "OPENAUTH"
-service = "openauth"
-environment = "production"
-
 # Durable Object bindings
 [durable_objects]
 bindings = [
