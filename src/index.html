@@ -489,7 +489,7 @@ body {
   #roster {
     width: 100%;
     height: 100%;
-    display: block; /* Roster tampil default */
+    display: block; /* Roster default */
   }
   
   #chatlog {
@@ -511,7 +511,7 @@ body {
     padding: 12px 16px;
   }
   
-  /* Class untuk mode chat aktif - ditambahkan via JavaScript */
+  /* Class mode chat aktif - JavaScript */
   body.chat-active #roster {
     display: none;
   }
@@ -567,7 +567,7 @@ a:hover {
 
   <!-- HEADER -->
   <header id="app-header">
-    <button id="back-button">←</button>
+    <button id="back-button">✖️</button>
     <div id="header-title">READTalk</div>
     <div id="header-menu">
       <button id="menu-button">⋮</button>
@@ -608,19 +608,19 @@ a:hover {
   <div id="room-form">
     <div class="form-content">
       <h2>Welcome to READTalk</h2>
-      <input type="text" id="room-name" placeholder="Enter room name" maxlength="32">
-      <button id="go-public">Join Public Room</button>
+      <input type="text" id="room-name" placeholder="Room Name..." maxlength="14">
+      <button id="go-public">Public Room</button>
       <div class="or-divider">or</div>
-      <button id="go-private">Create Private Room</button>
+      <button id="go-private">Private Room</button>
     </div>
   </div>
 
   <!-- NAME FORM -->
   <div id="name-form" style="display: none;">
     <div class="form-content">
-      <h2>Choose your name</h2>
+      <h2>Choose Your Name</h2>
       <input type="text" id="name-input" placeholder="Your name" maxlength="32">
-      <button id="join-chat">Join READTalk</button>
+      <button id="join-chat">Check In</button>
       <p style="margin-top: 20px; color: var(--text-secondary);">Private chat on the edge<br>with Cloudflare Durable Objects</p>
     </div>
   </div>
@@ -648,7 +648,7 @@ a:hover {
     let isDarkMode = localStorage.getItem('dark_mode') === 'true';
     let participants = new Map(); // name -> online status
     let pendingParticipants = [];
-    let isChatActive = false; // Untuk smartphone: false = roster view, true = chat view
+    let isChatActive = false; // smartphone: false = roster view, true = chat view
 
     // DOM Elements
     const elements = {
