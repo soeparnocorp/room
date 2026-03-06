@@ -645,7 +645,7 @@
   const userId = params.get('userId');
   if (userId) {
     setTimeout(() => {
-      document.getElementById('room-name').value = `userId:${userId}`;
+      document.getElementById('room-name').value = `user:${userId}`;
       document.getElementById('go-public').click();
     }, 1000);
   }
