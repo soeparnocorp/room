@@ -639,6 +639,18 @@
 
   <script>
     //===== System Parameter =====
+    // Letakkan di paling atas script, sebelum blok System Parameter
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const userId = params.get('userId');
+  if (userId) {
+    setTimeout(() => {
+      document.getElementById('room-name').value = `userId:${userId}`;
+      document.getElementById('go-public').click();
+    }, 1000);
+  }
+})();
+    
   (function() {
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('userId');
