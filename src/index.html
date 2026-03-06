@@ -1031,6 +1031,22 @@ window.addEventListener('message', (event) => {
     }
 
     // ========== EVENT LISTENERS ==========
+
+    window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  
+  if (event.data.type === 'CREATE_USER_ROOM') {
+    const roomName = `user${event.data.userId}`;  // "user12345"
+    document.getElementById('room-name').value = roomName;
+    document.getElementById('go-public').click();
+    
+    event.source.postMessage({
+      type: 'USER_ROOM_CREATED',
+      userId: event.data.userId,
+      roomName: roomName
+    }, event.origin);
+  }
+});
     
     // Room form
     elements.goPublic.addEventListener('click', () => {
