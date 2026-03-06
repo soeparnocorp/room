@@ -1035,6 +1035,15 @@ window.addEventListener('message', (event) => {
 window.addEventListener('message', (event) => {
   if (event.origin !== 'https://id-readtalk.pages.dev') return;
   
+  if (event.data.type === 'OPEN_ROOM') {
+    document.getElementById('room-name').value = event.data.roomName;
+    document.getElementById('go-public').click();
+  }
+});
+    
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  
   if (event.data.type === 'PROFILE_READY') {
     // Kasih tahu profile bahwa kita siap
     event.source.postMessage({
