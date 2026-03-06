@@ -660,12 +660,11 @@
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId, email, username })
-    }).catch(err => console.error('Failed to save user:', err));
-    document.addEventListener('DOMContentLoaded', () => {
+    }).catch(err => console.error('Failed to save user:', err));    
     setTimeout(() => {
   roomname = `user:${userId}`;
   joinChat();
-}, 100);
+}, 300);
   })();   
     
     (function() {
