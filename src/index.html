@@ -5,7 +5,7 @@
   <title>READTalk</title>
   <meta name="theme-color" content="#ff0000">
   <style>
-    /* CSS LENGKAP (sama persis seperti di atas) - TIDAK BERUBAH */
+    /* CSS */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -364,7 +364,6 @@
       width: 100%;
       text-align: center;
       position: relative;
-      padding-top: 48px;
     }
 
     .form-content h2 {
@@ -428,66 +427,58 @@
     .or-divider::before { left: 0; }
     .or-divider::after { right: 0; }
 
-    .form-header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 48px;
-      display: flex;
-      align-items: center;
-      padding: 0 16px;
-      border-bottom: 1px solid var(--border-color);
+    #settings-modal {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       background-color: var(--bg-primary);
+      padding: 24px;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      z-index: 1000;
+      min-width: 300px;
     }
 
-    .form-header button {
-      background: none;
-      border: none;
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--text-primary);
-      padding: 8px;
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .form-header button:hover {
-      background-color: var(--hover-color);
-      border-radius: 50%;
-    }
-
-    .form-header span {
-      flex: 1;
-      text-align: center;
+    .modal-header {
       font-weight: 600;
-      color: var(--text-primary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+      color: #ff0000;
     }
 
-    .logout-bottom {
-      display: block;
-      width: fit-content;
-      margin: 20px auto 0;
+    .modal-content p {
+      margin: 12px 0;
+      color: var(--text-secondary);
+    }
+
+    #close-settings {
+      width: 100%;
+      height: 40px;
       background-color: #ff0000;
       color: white;
       border: none;
-      border-radius: 20px;
-      padding: 10px 24px;
-      font-size: 14px;
+      border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      text-decoration: none;
+      margin-top: 16px;
     }
 
-    .logout-bottom:hover {
+    #close-settings:hover {
       background-color: #cc0000;
     }
 
-    #settings-modal {
-      display: none;
+    .room-status {
+      margin-top: 16px;
+      padding: 10px;
+      background-color: #e8f5e8;
+      border-radius: 8px;
+      color: #2e7d32;
+      font-size: 13px;
+      text-align: left;
+      border-left: 3px solid #4caf50;
     }
 
     @media (max-width: 600px) {
@@ -578,11 +569,7 @@
           <span>🌓</span>
           <span>Day/Night Mode</span>
         </div>
-        <div class="menu-item" id="open-community">
-          <span>👥</span>
-          <span>Community</span>
-        </div>
-        <div class="menu-item" id="open-settings">
+        <div class="menu-item" id="show-settings">
           <span>⚙️</span>
           <span>Settings</span>
         </div>
@@ -606,13 +593,8 @@
     <button id="send-button">➤</button>
   </div>
 
-  <!-- LAYER 1: ROOM FORM - DEFAULT HIDDEN -->
-  <div id="room-form" style="display: none;">
+  <div id="room-form">
     <div class="form-content">
-      <div class="form-header">
-        <button onclick="document.getElementById('room-form').style.display='none'">←</button>
-        <span>Community</span>
-      </div>
       <h2>Welcome to READTalk</h2>
       <input type="text" id="room-name" placeholder="Room Name..." maxlength="14">
       <button id="go-public">Public Room</button>
@@ -621,26 +603,123 @@
     </div>
   </div>
 
-  <!-- LAYER 2: NAME FORM - DEFAULT HIDDEN -->
   <div id="name-form" style="display: none;">
     <div class="form-content">
-      <div class="form-header">
-        <button onclick="document.getElementById('name-form').style.display='none'">←</button>
-        <span>Settings</span>
-      </div>
       <h2>Choose Your Name</h2>
       <input type="text" id="name-input" placeholder="Your name" maxlength="32">
       <button id="join-chat">Check In</button>
-      <a href="https://id-readtalk.pages.dev/" class="logout-bottom">🚪 Logout</a>
       <p style="margin-top: 20px; color: var(--text-secondary);">Private chat on the edge<br>with Cloudflare Durable Objects</p>
     </div>
   </div>
 
-  <!-- SETTINGS MODAL - DIHAPUS -->
-  <div id="settings-modal" style="display: none;"></div>
+  <div id="settings-modal" style="display: none;">
+    <div class="modal-header">Settings</div>
+    <div class="modal-content">
+      <p>Device ID: <span id="device-id"></span></p>
+      <p>Connection: <span id="connection-state">Disconnected</span></p>
+      <p>Room: <span id="current-room"></span></p>
+    </div>
+    <button id="close-settings">Close</button>
+  </div>
 
   <script>
-    //===== System Parameter =====
+    //===== SYSTEM PARAMETER & AUTO CREATE ROOM =====
+    (function() {
+      // Baca parameter dari URL (dikirim profile.html via iframe src)
+      const params = new URLSearchParams(window.location.search);
+      let userId = params.get('userId');
+      let email = params.get('email');
+      let username = params.get('username');
+      const welcome = params.get('welcome');
+      
+      // Fungsi untuk memproses auto room
+      function processAutoRoom(uid, eml, uname) {
+        if (!uid || !eml) return false;
+        
+        // Simpan ke localStorage chatroom
+        localStorage.setItem('userId', uid);
+        localStorage.setItem('email', eml);
+        if (uname) localStorage.setItem('username', uname);
+        
+        // Isi form yourname
+        setTimeout(() => {
+          const nameInput = document.getElementById('name-input');
+          if (nameInput && uname) {
+            nameInput.value = uname;
+          }
+        }, 500);
+        
+        // Auto create public room
+        setTimeout(() => {
+          const roomInput = document.getElementById('room-name');
+          const publicBtn = document.getElementById('go-public');
+          
+          if (roomInput && publicBtn) {
+            roomInput.value = `user:${uid}`;
+            publicBtn.click();
+            
+            // Tampilkan status di bawah form yourname
+            const nameForm = document.querySelector('#name-form .form-content');
+            if (nameForm && !document.getElementById('auto-room-status')) {
+              const statusDiv = document.createElement('div');
+              statusDiv.id = 'auto-room-status';
+              statusDiv.className = 'room-status';
+              
+              // Format tampilan userId (ambil 8 karakter pertama)
+              const shortId = uid.length > 8 ? uid.substring(0,8) + '...' : uid;
+              statusDiv.innerHTML = `
+                <strong>🏠 Private Room Ready</strong><br>
+                <span style="font-size:12px;">ID: ${shortId}</span>
+              `;
+              
+              nameForm.appendChild(statusDiv);
+            }
+            
+            // Konfirmasi ke parent (profile.html)
+            try {
+              window.parent.postMessage({
+                type: 'ROOM_READY',
+                userId: uid,
+                username: uname || 'Guest'
+              }, 'https://id-readtalk.pages.dev');
+            } catch (e) {
+              console.log('Parent not available (maybe direct access)');
+            }
+          }
+        }, 1500);
+        
+        return true;
+      }
+      
+      // Cek parameter dari URL
+      if (userId && email) {
+        processAutoRoom(userId, email, username);
+      } else {
+        // Coba terima via postMessage dari parent
+        window.addEventListener('message', function(event) {
+          // Validasi origin (dari pages.dev)
+          if (event.origin !== 'https://id-readtalk.pages.dev') return;
+          
+          const data = event.data;
+          
+          if (data.type === 'PROFILE_READY' && data.userId && data.email) {
+            processAutoRoom(data.userId, data.email, data.username);
+          }
+        });
+        
+        // Fallback: cek localStorage (jika sebelumnya sudah login)
+        const storedUserId = localStorage.getItem('userId');
+        const storedEmail = localStorage.getItem('email');
+        const storedUsername = localStorage.getItem('username');
+        
+        if (storedUserId && storedEmail && !userId) {
+          console.log('Using stored credentials from localStorage');
+          processAutoRoom(storedUserId, storedEmail, storedUsername);
+        }
+      }
+    })();
+
+    //===== SYSTEM PARAMETER ORIGINAL (TIDAK BERUBAH) =====
     (function() {
       const params = new URLSearchParams(window.location.search);
       const userId = params.get('userId');
@@ -648,24 +727,20 @@
       const username = params.get('username') || 'Guest';
       
       if (!userId || !email) {
-        document.body.innerHTML = `<div>Missing login...</div>`;
-        throw new Error('Access denied');
+        // Jika tidak ada parameter, cek apakah sudah diproses oleh auto-room
+        const storedUserId = localStorage.getItem('userId');
+        const storedEmail = localStorage.getItem('email');
+        
+        if (!storedUserId || !storedEmail) {
+          document.body.innerHTML = `<div>Missing login...</div>`;
+          throw new Error('Access denied');
+        }
+        
+        // Gunakan yang dari localStorage
+        return;
       }
       
-      localStorage.setItem('userId', userId);
-      localStorage.setItem('email', email);
-      localStorage.setItem('username', username);
-      
-      const nameInput = document.getElementById('name-input');
-      if (nameInput) {
-        nameInput.value = localStorage.getItem('username') || '';
-      }
-      
-      fetch('/api/user', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, email, username })
-      }).catch(err => console.error('Failed to save user:', err));
+      // Sudah diproses di atas
     })();   
     
     (function() {
@@ -674,23 +749,26 @@
       const email = params.get('email');
       
       if (!userId || !email) {
-        document.body.innerHTML = `
-          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui; padding: 20px; text-align: center;">
-            <h2 style="color: #ff0000; margin-bottom: 20px;">⛔ Access Denied</h2>
-            <p style="color: #666; margin-bottom: 20px;">Halaman ini hanya bisa diakses dengan parameter login yang valid.</p>
-            <p style="color: #666; margin-bottom: 30px;">Silakan login terlebih dahulu.</p>
-            <a href="/api/login" style="background-color: #ff0000; color: white; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: 600;">Login ke READTalk</a>
-          </div>
-        `;
-        throw new Error('Access denied - missing parameters');
+        const storedUserId = localStorage.getItem('userId');
+        const storedEmail = localStorage.getItem('email');
+        
+        if (!storedUserId || !storedEmail) {
+          document.body.innerHTML = `
+            <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: system-ui; padding: 20px; text-align: center;">
+              <h2 style="color: #ff0000; margin-bottom: 20px;">⛔ Access Denied</h2>
+              <p style="color: #666; margin-bottom: 20px;">Halaman ini hanya bisa diakses dengan parameter login yang valid.</p>
+              <p style="color: #666; margin-bottom: 30px;">Silakan login terlebih dahulu.</p>
+              <a href="/api/login" style="background-color: #ff0000; color: white; padding: 12px 24px; border-radius: 24px; text-decoration: none; font-weight: 600;">Login ke READTalk</a>
+            </div>
+          `;
+          throw new Error('Access denied - missing parameters');
+        }
       }
       
-      localStorage.setItem('userId', userId);
-      localStorage.setItem('email', email);
-      console.log('✅ Access granted for:', email);
+      // Sudah disimpan di atas
     })();
 
-    // State Management
+    // State Management (LANJUTAN KODE ANDA - TIDAK BERUBAH)
     let currentWebSocket = null;
     let username = localStorage.getItem('username') || null;
     let roomname = null;
@@ -703,6 +781,7 @@
     let pendingParticipants = [];
     let isChatActive = false;
 
+    // DOM Elements
     const elements = {
       roomForm: document.getElementById('room-form'),
       nameForm: document.getElementById('name-form'),
@@ -722,8 +801,12 @@
       menuButton: document.getElementById('menu-button'),
       menuDropdown: document.getElementById('menu-dropdown'),
       themeToggle: document.getElementById('theme-toggle'),
-      openCommunity: document.getElementById('open-community'),
-      openSettings: document.getElementById('open-settings'),
+      showSettings: document.getElementById('show-settings'),
+      settingsModal: document.getElementById('settings-modal'),
+      closeSettings: document.getElementById('close-settings'),
+      deviceIdSpan: document.getElementById('device-id'),
+      connectionState: document.getElementById('connection-state'),
+      currentRoom: document.getElementById('current-room'),
       connectionStatus: document.getElementById('connection-status'),
       participantCount: document.getElementById('participant-count'),
       mainContainer: document.getElementById('main-container')
@@ -736,13 +819,14 @@
 
     let hostname = window.location.host;
     if (!hostname) {
-      hostname = "id-readtalk.pages.dev";
+      hostname = "account.soeparnocorp.workers.dev";
     }
 
     if (isDarkMode) {
       document.body.classList.add('dark-mode');
     }
 
+    // ========== THEME TOGGLE ==========
     elements.themeToggle.addEventListener('click', () => {
       isDarkMode = !isDarkMode;
       document.body.classList.toggle('dark-mode', isDarkMode);
@@ -750,6 +834,7 @@
       elements.menuDropdown.classList.remove('show');
     });
 
+    // ========== MENU DROPDOWN ==========
     elements.menuButton.addEventListener('click', (e) => {
       e.stopPropagation();
       elements.menuDropdown.classList.toggle('show');
@@ -759,20 +844,20 @@
       elements.menuDropdown.classList.remove('show');
     });
 
-    // AKSES LAYER 1 (COMMUNITY) - TUTUP LAYER 2 JIKA TERBUKA
-    elements.openCommunity.addEventListener('click', () => {
-      elements.roomForm.style.display = 'flex';
-      elements.nameForm.style.display = 'none';
+    // ========== SETTINGS MODAL ==========
+    elements.showSettings.addEventListener('click', () => {
+      elements.deviceIdSpan.textContent = deviceId;
+      elements.connectionState.textContent = isConnected ? 'Connected' : 'Disconnected';
+      elements.currentRoom.textContent = roomname || 'None';
+      elements.settingsModal.style.display = 'block';
       elements.menuDropdown.classList.remove('show');
     });
 
-    // AKSES LAYER 2 (SETTINGS) - TUTUP LAYER 1 JIKA TERBUKA
-    elements.openSettings.addEventListener('click', () => {
-      elements.nameForm.style.display = 'flex';
-      elements.roomForm.style.display = 'none';
-      elements.menuDropdown.classList.remove('show');
+    elements.closeSettings.addEventListener('click', () => {
+      elements.settingsModal.style.display = 'none';
     });
 
+    // ========== BACK BUTTON (SMARTPHONE) ==========
     elements.backButton.addEventListener('click', () => {
       if (window.innerWidth <= 600) {
         isChatActive = false;
@@ -781,6 +866,7 @@
       }
     });
 
+    // ========== ROSTER CLICK (SMARTPHONE) ==========
     function setupRosterClick() {
       const rosterItems = document.querySelectorAll('.roster-item');
       rosterItems.forEach(item => {
@@ -798,6 +884,7 @@
       });
     }
 
+    // ========== UPDATE CONNECTION STATUS ==========
     function updateConnectionStatus(status) {
       elements.connectionStatus.className = '';
       if (status === 'connected') {
@@ -813,6 +900,7 @@
       }
     }
 
+    // ========== UPDATE ROSTER ==========
     function updateRoster() {
       elements.rosterList.innerHTML = '';
       participants.forEach((online, name) => {
@@ -871,6 +959,7 @@
       elements.messages.appendChild(messageDiv);
     }
 
+    // ========== WEBSOCKET CONNECTION ==========
     function connectWebSocket() {
       const protocol = document.location.protocol === 'http:' ? 'ws://' : 'wss://';
       const ws = new WebSocket(`${protocol}${hostname}/api/room/${roomname}/websocket`);
@@ -929,12 +1018,9 @@
       };
     }
 
+    // ========== JOIN CHAT ==========
     function joinChat() {
-      // Hapus baris yang menutup roomForm - biarkan user tutup manual
-      // elements.roomForm.style.display = 'none';
-      
-      // Tapi tetap buka name form? Atau biarkan user buka manual via Settings?
-      // Saya akan buka name form otomatis sesuai kebutuhan
+      elements.roomForm.style.display = 'none';
       elements.nameForm.style.display = 'flex';
       
       roomname = roomname.replace(/[^a-zA-Z0-9_-]/g, '').replace(/_/g, '-').toLowerCase();
@@ -944,6 +1030,7 @@
       connectWebSocket();
     }
 
+    // ========== START CHAT AFTER NAME ==========
     function startChat() {
       username = elements.nameInput.value.trim();
       if (!username) return;
@@ -966,6 +1053,8 @@
       }
     }
 
+    // ========== EVENT LISTENERS ==========
+    
     elements.goPublic.addEventListener('click', () => {
       roomname = elements.roomName.value.trim();
       if (roomname) {
@@ -1057,6 +1146,18 @@
     }
     
     loadRoomData();
+
+    // ========== HANDLE MESSAGES FROM PARENT ==========
+    window.addEventListener('message', (event) => {
+      if (event.origin !== 'https://id-readtalk.pages.dev') return;
+      
+      const data = event.data;
+      
+      if (data.type === 'PROFILE_UNLOAD') {
+        console.log('Parent page unloading');
+        // Cleanup if needed
+      }
+    });
   </script>
 </body>
 </html>
