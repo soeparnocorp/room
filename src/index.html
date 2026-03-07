@@ -13,7 +13,7 @@
     }
 
     :root {
-      /* READTalk Primary - MURNI #ff0000 */
+      /* READTalk Primary - #ff0000 */
       --readtalk: #ff0000;
       --readtalk-dark: #cc0000;
       --readtalk-light: #ff3333;
@@ -52,7 +52,7 @@
       transition: background-color 0.3s, color 0.3s;
     }
 
-    /* HEADER - READTalk Red */
+    /* HEADER - READTalk */
     #app-header {
       position: fixed;
       top: 0;
@@ -166,7 +166,7 @@
       display: flex;
     }
 
-    /* ROSTER - KIRI (30%) */
+    /* ROSTER - Left (30%) */
     #roster {
       width: 30%;
       background-color: var(--roster-bg);
@@ -221,7 +221,7 @@
       font-size: 14px;
     }
 
-    /* CHATLOG - KANAN (70%) */
+    /* CHATLOG - Right (70%) */
     #chatlog {
       width: 70%;
       overflow-y: auto;
@@ -481,7 +481,7 @@
       background-color: #cc0000;
     }
 
-    /* ===== SMARTPHONE STYLES - DIPERBAIKI ===== */
+    /* ===== SMARTPHONE STYLES ===== */
     @media (max-width: 600px) {
       #main-container {
         flex-direction: column;
@@ -793,7 +793,7 @@
     });
     
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  if (event.origin !== 'https://app-readtalk.pages.dev') return;
   
   const data = event.data;
   
@@ -1033,7 +1033,7 @@ window.addEventListener('message', (event) => {
     // ========== EVENT LISTENERS ==========
     
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  if (event.origin !== 'https://app-readtalk.pages.dev') return;
   
   const data = event.data;
   
@@ -1053,7 +1053,7 @@ window.addEventListener('message', (event) => {
 });
     
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  if (event.origin !== 'https://app-readtalk.pages.dev') return;
   
   if (event.data.type === 'OPEN_ROOM') {
     document.getElementById('room-name').value = event.data.roomName;
@@ -1062,7 +1062,7 @@ window.addEventListener('message', (event) => {
 });
     
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  if (event.origin !== 'https://app-readtalk.pages.dev') return;
   
   if (event.data.type === 'PROFILE_READY') {
     // Kasih tahu profile bahwa kita siap
@@ -1089,7 +1089,7 @@ window.addEventListener('message', (event) => {
 });
 
     window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://id-readtalk.pages.dev') return;
+  if (event.origin !== 'https://app-readtalk.pages.dev') return;
   
   if (event.data.type === 'CREATE_USER_ROOM') {
     const roomName = `user${event.data.userId}`;  // "user12345"
